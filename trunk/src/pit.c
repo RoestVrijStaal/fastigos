@@ -1,6 +1,6 @@
 #include "config.h"
 #include "typedefs.h"
-#include "video.h"
+#include "drivers/video.h"
 #include "segments.h"
 
 

@@ -1,9 +1,9 @@
-#include "typedefs.h"
-#include "fdc.h"
-#include "config.h"
-#include "segments.h"
+#include "../typedefs.h"
+#include "../config.h"
+#include "../segments.h"
+#include "../pit.h"
 #include "video.h"
-#include "pit.h"
+#include "fdc.h"
 
 struct fdc_s
 {

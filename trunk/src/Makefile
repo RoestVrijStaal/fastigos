@@ -10,9 +10,6 @@ all:
 	gcc $(CFLAGS_INTEL) -S kernel.c -o kernel.S
 	as kernel.S -o kernel.o
 
-	gcc $(CFLAGS_INTEL) -S video.c -o video.S
-	as video.S -o video.o
-
 	gcc $(CFLAGS_INTEL) -S string.c -o string.S
 	as string.S -o string.o
 
@@ -28,7 +25,11 @@ all:
 	gcc $(CFLAGS_INTEL) -S pit.c -o pit.S
 	as pit.S -o pit.o
 
-	gcc $(CFLAGS_INTEL) -S fdc.c -o fdc.S
+	#drivers
+	gcc $(CFLAGS_INTEL) -S drivers/video.c -o video.S
+	as video.S -o video.o
+
+	gcc $(CFLAGS_INTEL) -S drivers/fdc.c -o fdc.S
 	as fdc.S -o fdc.o
 
 	ld kernel.o util.o video.o string.o segments.o pic.o fdc.o pit.o --warn-common -T linker.ld -strip-all -o kernel_code.bin
