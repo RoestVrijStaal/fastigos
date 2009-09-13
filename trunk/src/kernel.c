@@ -65,7 +65,8 @@ void _start(void)
 	}
 	else if ( fdc_type == FDC_VERSION_IS_STANDARD )
 	{
-		video_printstring(7, "fdc > Model 8272A/765A detected\n");
+		video_printstring(7, "fdc > Model 8272A/765A detected (not supported)\n");
+		kernel_crash();
 	}
 	else
 	{

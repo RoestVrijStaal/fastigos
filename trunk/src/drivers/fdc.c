@@ -5,8 +5,12 @@
 #include "../devel/video.h"
 #include "../devel/fdc.h"
 
+/*
+ * fdc status structure
+ */
 struct fdc_s
 {
+	uint8_t		wait_irq;
 	uint8_t		type;
 	uint8_t		st0;
 	uint8_t		pcn;
@@ -25,14 +29,12 @@ static __inline__ unsigned char inb(unsigned short port)
    return ret;
 }
 
-unsigned char irq_fdc_status;
-
 void irq_fdc(void)
 {
 	__asm__ __volatile__("pusha");
 	__asm__ __volatile__("cli");
 
-	irq_fdc_status = TRUE;
+	fdc.wait_irq = TRUE;
 
 	outb(PIC1_CMD, PIC_EOI);
 	__asm__ __volatile__("sti");
@@ -79,10 +81,10 @@ uint8_t fdc_reset(void)
 	outb(FDC_DOR, 0);	// fdc off
 	outb(FDC_DSR, 0);	// data rate 500kbs
 
-	irq_fdc_status = FALSE;
+	fdc.wait_irq = FALSE;
 	install_idt_handler(IRQ_FDC, (uint32_t)irq_fdc);
 	outb(FDC_DOR, 0xc);	// fdc on
-	while (!irq_fdc_status);
+	while (!fdc.wait_irq);
 	for (i= 0; i<=4;i++)
 	{
 		// get status
