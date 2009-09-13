@@ -20,6 +20,13 @@
 #define FDC_VERSION_IS_STANDARD			0x0
 #define FDC_VERSION_IS_ENHANCED			0x90
 
+#define	FDC_D0					0x1c
+#define	FDC_D1					0x2d
+#define	FDC_D2					0x4e
+#define	FDC_D3					0x8f
+
 uint8_t fdc_identify(void);
 uint8_t fdc_reset(void);
+uint8_t fdc_motoron(uint8_t drive);
+uint8_t fdc_motoroff();
 

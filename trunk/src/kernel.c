@@ -76,24 +76,6 @@ void _start(void)
 		kernel_crash();
 	}
 
-	
-
-	//fdc_init();
-
-	//fdc_seek(0, 8);
-	/*
-	uint8_t status = fdc_readblock(FDC_D0, 0);
-	if ( status != FDC_OK )
-	{
-		fdc_crash();
-		video_printstring(13, "FUNKY SHIT! SYSTEM HALTED\n");
-		__asm__("cli");
-		while(1)
-		{
-			__asm__("hlt");
-		}
-	}
-	*/
 
 	/*
 	int i;

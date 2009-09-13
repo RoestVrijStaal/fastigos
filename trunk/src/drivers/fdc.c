@@ -29,6 +29,45 @@ static __inline__ unsigned char inb(unsigned short port)
    return ret;
 }
 
+uint8_t fdc_motoron(uint8_t drive)
+{
+	uint8_t sendbyte;
+
+	if (drive == 0)
+	{
+		sendbyte = 0x10;
+	}
+	else if (drive == 1)
+	{
+		sendbyte = 0x20;
+	}
+	else if (drive == 2)
+	{
+		sendbyte = 0x40;
+	}
+	else if (drive == 3)
+	{
+		sendbyte = 0x80;
+	}
+	else
+	{
+		return FDC_ERROR;
+	}
+	outb(FDC_DOR, sendbyte);
+	timer_wait(50);
+	return FDC_OK;
+}
+
+uint8_t fdc_motoroff()
+{
+	// all motors off
+	//@todo find better way to do this!
+	uint8_t sendbyte = 0x0;
+
+	outb(FDC_DOR, sendbyte);
+	return FDC_OK;
+}
+
 void irq_fdc(void)
 {
 	__asm__ __volatile__("pusha");
