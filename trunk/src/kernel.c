@@ -1,11 +1,11 @@
-#include "config.h"
-#include "typedefs.h"
-#include "segments.h"
-#include "pic.h"
-#include "pit.h"
-#include "kernel.h"
-#include "drivers/video.h"
-#include "drivers/fdc.h"
+#include "devel/config.h"
+#include "devel/typedefs.h"
+#include "devel/segments.h"
+#include "devel/pic.h"
+#include "devel/pit.h"
+#include "devel/kernel.h"
+#include "devel/video.h"
+#include "devel/fdc.h"
 
 
 static inline void outb(uint16_t port, uint8_t data)

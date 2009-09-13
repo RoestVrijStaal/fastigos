@@ -1,7 +1,7 @@
-#include "../config.h"
-#include "../typedefs.h"
-#include "video.h"
-#include "../pit.h"
+#include "../devel/config.h"
+#include "../devel/typedefs.h"
+#include "../devel/video.h"
+#include "../devel/pit.h"
 
 volatile uint32_t	cursor_offset;
 

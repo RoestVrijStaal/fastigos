@@ -1,7 +1,7 @@
-#include "config.h"
-#include "typedefs.h"
-#include "drivers/video.h"
-#include "segments.h"
+#include "devel/config.h"
+#include "devel/typedefs.h"
+#include "devel/video.h"
+#include "devel/segments.h"
 
 
 uint16_t ticks;

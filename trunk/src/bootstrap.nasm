@@ -51,25 +51,23 @@ read_disc1:
 	mov	SI, strings.error_dontload		; print error message
 	call	print_routine				;
 	
-	xor	AH, AH			; reset disk	; reset floppy
-	xor	DL, DL			; drive 0	;
-	int	0x13					;
+	call	reset_fd0
 	jmp	read_disc1				; retry
 
 read_disc2:
-	pop	AX
-	mov	AX, 4		;
-	push	AX		; 3 retry's
+	pop	AX					;
+	mov	AX, 4					;
+	push	AX					; 3 retry's
 .tryread:
 	mov	AX,	BOOTSTRAP_KERNEL_REALMODE+8192	; desplaçament pel kernel
 	mov	ES,	AX
 	mov	BX,	0
-	mov	AH,	2	; Load disk data to ES:BX
-	mov	AL,	16	; Load 16 sectors
-	mov	CH,	0	; Cylinder=1
-	mov	CL,	2	; Sector=2
-	mov	DH,	0	; Head=0
-	mov	DL,	0	; Drive=0
+	mov	AH,	2				; Load disk data to ES:BX
+	mov	AL,	16				; Load 16 sectors
+	mov	CH,	0				; Cylinder=1
+	mov	CL,	2				; Sector=2
+	mov	DH,	0				; Head=0
+	mov	DL,	0				; Drive=0
 	int	13h
 	jc	.retry
 	jmp	verify_kernel_signature
@@ -83,9 +81,7 @@ read_disc2:
 	mov	SI, strings.error_dontload
 	call	print_routine
 	
-	xor	AH, AH			; reset disk
-	xor	DL, DL			; drive 0
-	int	0x13
+	call	reset_fd0
 
 	jmp	.tryread
 
@@ -159,6 +155,14 @@ print_routine:
 .end:
 	ret
 ; ############################################################################
+; ### Reset floppy disk 
+; ############################################################################
+reset_fd0:
+	xor	AH, AH			; reset disk
+	xor	DL, DL			; drive 0
+	int	0x13
+	ret
+; ############################################################################
 ; ### Halt system
 ; ############################################################################
 infinite:
@@ -188,7 +192,7 @@ strings:
 ; ### GDT data
 ; ############################################################################
 gdtinfo:
-	dw	gdt.fi - gdt -1
+	dw	gdt.end - gdt -1
 	dd	gdt
 ; ############################################################################
 ; ### GDT descriptors
@@ -237,6 +241,6 @@ gdt:
 ; db P(1)/DPL(2)/0/1011
 ; db G(1)/0/0/AVL(1)/Limit L16-L19(4)
 ; db Base B24-B31	
-.fi:                ; Used to calculate the size of the GDT
+.end:                ; Used to calculate the size of the GDT
 kernel_signature:
 incbin "kernel_signature.bin"
