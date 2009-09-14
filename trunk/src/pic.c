@@ -10,6 +10,7 @@ static inline void outb(uint16_t port, uint8_t data)
 
 void pic_init(void)
 {
+	video_printstring(7, "8259A ");
 	video_printstring(7, "Id, ");
 	__asm__ __volatile("cli");
 	video_printstring(7, "cfg irq's, ");

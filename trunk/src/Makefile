@@ -3,6 +3,7 @@ CFLAGS_ATT=-Wall -m32 -nostdlib -static  -nostdinc --freestanding -fno-stack-pro
 all:
 	dd if=/dev/zero of=../fda.img bs=1k count=1440
 	mkfs.vfat -R 8 ../fda.img
+	# in macOS use /sbin/newfs_msdos
 	nasm kernel_signature.nasm -o kernel_signature.bin
 	nasm -o mbr.bin -f bin bootstrap.nasm
 	dd if=mbr.bin of=../fda.img bs=1 conv=notrunc seek=62

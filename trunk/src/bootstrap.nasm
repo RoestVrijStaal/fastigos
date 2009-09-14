@@ -15,7 +15,7 @@
 _start:
 
 configure_stack:
-	cli
+	cli						; disable interrupts
 
 	mov	AX, BOOTSTRAP_STACK			;
 	mov	BX, BOOTSTRAP_STACKSIZE			;
@@ -59,7 +59,7 @@ read_disc2:
 	mov	AX, 4					;
 	push	AX					; 3 retry's
 .tryread:
-	mov	AX,	BOOTSTRAP_KERNEL_REALMODE+8192	; desplaçament pel kernel
+	mov	AX,	BOOTSTRAP_KERNEL_REALMODE+8192	; after the first read
 	mov	ES,	AX
 	mov	BX,	0
 	mov	AH,	2				; Load disk data to ES:BX
@@ -103,26 +103,26 @@ alldone:
 	mov	ES, AX
 
 to_pmode:
-	lgdt	[gdtinfo]
+	lgdt	[gdtinfo]			; load GDT
+						
+	mov	EAX, CR0			; prepare protected mode
+	or	AL, 1				; set bit of protected mode in cpu
+	mov	CR0, EAX			;
+						;
+						; configure stack
+	mov	EAX, SEGMENT_STACK		; in protected mode, in second register of GDT
+	mov	SS, EAX				;
+	mov	EAX, 0xFFFE			;
+	mov	ESP, EAX			;
+						;
+						; configure data segments
+	mov	AX, SEGMENT_DATA		; in protected mode, the thirth registr of GDT
+	mov	DS, AX				;
+	mov	ES, AX				;
+	mov	FS, AX				;
+	mov	GS, AX				;
 
-	mov	EAX, CR0
-	or	AL, 1
-	mov	CR0, EAX
-
-		; stack
-	mov	EAX, SEGMENT_STACK
-	mov	SS, EAX
-	mov	EAX, 0xFFFE
-	mov	ESP, EAX
-
-		; configure segments
-	mov	AX, SEGMENT_DATA
-	mov	DS, AX
-	mov	ES, AX
-	mov	FS, AX
-	mov	GS, AX
-
-	jmp	SEGMENT_CODE:pmode
+	jmp	SEGMENT_CODE:pmode		; Let's go to the party!
 
 ; ############################################################################
 ; ### Kernel signature don't match
@@ -176,9 +176,9 @@ infinite:
 ; ############################################################################
 
 [BITS 32]
-	; I'm in protected mode!
-pmode:
-	jmp	SEGMENT_CODE:BOOTSTRAP_KERNEL_PMODE+0x10	; shut up the signature!
+								; I'm in protected mode!
+pmode:								;
+	jmp	SEGMENT_CODE:BOOTSTRAP_KERNEL_PMODE+0x10	; shut up the signature! and run the kernel (bye bye!)
 ; ############################################################################
 ; ### All strings
 ; ############################################################################
