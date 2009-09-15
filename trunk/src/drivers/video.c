@@ -1,9 +1,43 @@
-#include "../devel/config.h"
-#include "../devel/typedefs.h"
-#include "../devel/video.h"
-#include "../devel/pit.h"
+#include "config.h"
+#include "typedefs.h"
+#include "video.h"
+#include "pit.h"
+
+// fastigOS driver interface
+volatile uint32_t init=(uint32_t)&video_init;
+volatile uint32_t read=(uint32_t)&video_read;
+volatile uint32_t write=(uint32_t)&video_write;
+volatile uint32_t fini=(uint32_t)&video_fini;
 
 volatile uint32_t	cursor_offset;
+
+void video_fini(void)
+{
+}
+
+uint8_t *video_read(void)
+{
+	return 0x0;
+}
+
+void video_write(uint8_t *string)
+{
+	video_printstring(7, (const char *)string);
+}
+
+void video_init(void)
+{
+	uint8_t	*c;
+	uint8_t *l;
+
+	// the bootstrap saves here the cursor
+	c = (uint8_t *)0x7C41;
+	l = (uint8_t *)0x7C42;
+
+	cursor_offset = SCREEN_COLS * *l;
+	cursor_offset = cursor_offset + *c;
+	cursor_offset = cursor_offset * 2;
+}
 
 void printk(char *string)
 {

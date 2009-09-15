@@ -9,11 +9,24 @@
 %define	BOOTSTRAP_KERNEL_SIGNATURE	0x7e00
 %define	BOOTSTRAP_KERNEL_REALMODE	0x7e00
 %define	BOOTSTRAP_KERNEL_PMODE		0x7e000
+%define	BOOTSTRAP_KERNEL_PMODE_CODE	0x7e010
 
 [BITS 16]
 [ORG 0x7C3E]
 _start:
-
+	jmp	configure_stack
+cursor:
+.c:	db	0
+.l:	db	0
+; ############################################################################
+; ### Save cursor for kernel
+; ############################################################################
+save_cursor:
+	mov	AH, 0x3
+	int	0x10
+	mov	[cursor.c], DL
+	mov	[cursor.l], DH
+	ret
 configure_stack:
 	cli						; disable interrupts
 
@@ -101,8 +114,10 @@ verify_kernel_signature:
 alldone:
 	mov	AX, 0
 	mov	ES, AX
+	call	save_cursor
 
 to_pmode:
+	lidt	[idtinfo]			; load IDT
 	lgdt	[gdtinfo]			; load GDT
 						
 	mov	EAX, CR0			; prepare protected mode
@@ -171,6 +186,7 @@ infinite:
 .loop:
 	hlt
 	jmp	.loop
+
 ; ############################################################################
 ; ### 32bit bootloader part
 ; ############################################################################
@@ -178,7 +194,7 @@ infinite:
 [BITS 32]
 								; I'm in protected mode!
 pmode:								;
-	jmp	SEGMENT_CODE:BOOTSTRAP_KERNEL_PMODE+0x10	; shut up the signature! and run the kernel (bye bye!)
+	jmp	SEGMENT_CODE:BOOTSTRAP_KERNEL_PMODE_CODE	; shut up the signature! and run the kernel (bye bye!)
 ; ############################################################################
 ; ### All strings
 ; ############################################################################
@@ -188,6 +204,12 @@ strings:
 .error_dontload:	db	"retrying...",10,13,0
 .error_kernel_nomatch:	db	"Kernel not found ", 0
 .err_system_halted:	db	"system halted",0
+; ############################################################################
+; ### IDT data
+; ############################################################################
+idtinfo:
+	dw	0
+	dd	0
 ; ############################################################################
 ; ### GDT data
 ; ############################################################################

@@ -1,12 +1,12 @@
-#include "devel/config.h"
-#include "devel/typedefs.h"
-#include "devel/segments.h"
-#include "devel/pic.h"
-#include "devel/pit.h"
-#include "devel/kernel.h"
-#include "devel/video.h"
-#include "devel/fdc.h"
-
+#include "config.h"
+#include "typedefs.h"
+#include "segments.h"
+#include "pic.h"
+#include "pit.h"
+#include "kernel.h"
+#include "video.h"
+#include "fdc.h"
+#include "memory.h"
 
 static inline void outb(uint16_t port, uint8_t data)
 {
@@ -23,7 +23,8 @@ static __inline__ unsigned char inb(unsigned short port)
 
 void _start(void)
 {
-	video_clear();
+	video_init();
+	//video_clear();
 	video_printstring(9, "f");
 	video_printstring(3, "astig");
 	video_printstring(11, "OS");
@@ -51,6 +52,12 @@ void _start(void)
 	video_print_uint32(9, (uint32_t)&pic_init);
 	video_printstring(7, ") Init PIC...");
 	pic_init();
+
+	video_printstring(7, "(");
+	video_print_uint32(9, (uint32_t)&mm_init);
+	video_printstring(7, ") Init MM...");
+	mm_init();
+	video_printstring(7, "OK\n");
 
 	video_printstring(7, "Init FDC...\n");
 
