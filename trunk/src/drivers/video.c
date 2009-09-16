@@ -22,7 +22,7 @@ uint8_t *video_read(void)
 
 void video_write(uint8_t *string)
 {
-	video_printstring(7, (const char *)string);
+	video_printstring(7, (char *)string);
 }
 
 void video_init(void)
@@ -110,7 +110,7 @@ void video_printc(int color, char *byte)
 	}
 }
 
-void video_printstring(int color, const char *string)
+void video_printstring(int color, char *string)
 {
 
 	while(*string!=0)

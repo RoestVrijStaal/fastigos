@@ -1,7 +1,9 @@
-#include "devel/config.h"
-#include "devel/typedefs.h"
-#include "devel/video.h"
-#include "devel/segments.h"
+#include "config.h"
+#include "typedefs.h"
+#include "video.h"
+#include "segments.h"
+#include "pic.h"
+#include "pit.h"
 
 
 uint16_t ticks;
@@ -22,7 +24,6 @@ void timer_phase()
 	outb(IO_PIT_COMMAND, 0x36);             /* Set our command byte 0x36 */
 	outb(IO_PIT0, divisor & 0xFF);   /* Set low byte of divisor */
 	outb(IO_PIT0, divisor >> 8);     /* Set high byte of divisor */
-
 	__asm__ __volatile__("sti");
 }
 void clock_tick()

@@ -1,6 +1,7 @@
-#include "devel/config.h"
-#include "devel/typedefs.h"
-#include "devel/video.h"
+#include "config.h"
+#include "typedefs.h"
+#include "video.h"
+#include "pic.h"
 
 static inline void outb(uint16_t port, uint8_t data)
 {

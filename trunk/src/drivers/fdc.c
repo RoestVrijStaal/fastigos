@@ -1,9 +1,10 @@
-#include "../devel/typedefs.h"
-#include "../devel/config.h"
-#include "../devel/segments.h"
-#include "../devel/pit.h"
-#include "../devel/video.h"
-#include "../devel/fdc.h"
+#include "typedefs.h"
+#include "config.h"
+#include "segments.h"
+#include "pit.h"
+#include "video.h"
+#include "fdc.h"
+#include "pic.h"
 
 enum FloppyRegisters
 {

@@ -5,7 +5,7 @@ void video_init(void);
 void video_clear(void);
 void video_scroll(void);
 void video_printc(int color, char *byte);
-void video_printstring(int color, const char *string);
+void video_printstring(int color, char *string);
 void video_setcursor();
 void printk(char *string);
 void video_print_uint8(int color, uint8_t number);

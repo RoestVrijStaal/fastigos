@@ -7,6 +7,8 @@
 #include "video.h"
 #include "fdc.h"
 #include "memory.h"
+#include "rtc.h"
+#include "util.h"
 
 static inline void outb(uint16_t port, uint8_t data)
 {
@@ -24,15 +26,30 @@ static __inline__ unsigned char inb(unsigned short port)
 void _start(void)
 {
 	video_init();
-	//video_clear();
-	video_printstring(9, "f");
-	video_printstring(3, "astig");
-	video_printstring(11, "OS");
-	video_printstring(7, " is here!\n");
+	video_printstring(14,"fastigOS is here!\n");
 
+	cmosdump();
+	/*
+	char cpuid[13];
+	char *cpuid0;
+	char *cpuid1;
+	char *cpuid2;
+	video_printstring(7,"CPU type: ");
+	BREAKPOINT_INTEL;
+	cpuid0 = cpuid;
+	cpuid1 = cpuid+4;
+	cpuid2 = cpuid+8;
 
-	//printk("fastigOS is here!");
-	
+	__asm__ __volatile__(
+			"cpuid;"
+			:"=b"(cpuid0),"=c"(cpuid1),"=d"(cpuid2):"al"(0x0)
+			);
+	cpuid[13] = 0;
+	BREAKPOINT_INTEL;
+	video_printstring(7, cpuid);
+	video_printstring(7, "\n");
+	*/
+
 	video_printstring(7, "(");
 	video_print_uint32(9, (uint32_t)&gdt_init);
 	video_printstring(7, ") Init GDT...");
@@ -49,6 +66,11 @@ void _start(void)
 	pit_init();
 
 	video_printstring(7, "(");
+	video_print_uint32(9, (uint32_t)&rtc_init);
+	video_printstring(7, ") Init RTC...");
+	rtc_init();
+
+	video_printstring(7, "(");
 	video_print_uint32(9, (uint32_t)&pic_init);
 	video_printstring(7, ") Init PIC...");
 	pic_init();
@@ -63,7 +85,7 @@ void _start(void)
 
 	video_printstring(7, "Reset FDC...");
 	//fdc_reset();
-	video_printstring(7, "OK\n");
+	video_printstring(7, "TODO\n");
 
 	uint8_t fdc_type = fdc_identify();
 	if ( fdc_type == FDC_VERSION_IS_ENHANCED )
@@ -83,21 +105,6 @@ void _start(void)
 		kernel_crash();
 	}
 
-
-	/*
-	int i;
-	unsigned char cmosdata;
-
-	video_printstring(7, "CMOS dump: ");
-	for (i=0;i<=0xff;i++)
-	{
-		outb(0x70, i);
-		cmosdata = inb(0x71);
-		video_print_uint8(7, cmosdata);
-		video_printstring(7, ",");
-	}
-	video_printstring(7, "\n");
-	*/
 	printk("System up and running... (mainloop)");
 
 	while(1)
