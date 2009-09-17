@@ -1,3 +1,11 @@
+;
+; bootstrap -- mbr program to load fastigOS kernel
+;
+; Author: Jordi Rubió
+;
+; Date: 16-09-2009
+;
+
 %define	SEGMENT_NULL			0x0
 %define SEGMENT_CODE			0x8
 %define SEGMENT_STACK			0x10
@@ -9,7 +17,10 @@
 %define	BOOTSTRAP_KERNEL_SIGNATURE	0x7e00
 %define	BOOTSTRAP_KERNEL_REALMODE	0x7e00
 %define	BOOTSTRAP_KERNEL_PMODE		0x7e000
-%define	BOOTSTRAP_KERNEL_PMODE_CODE	0x7e010
+%define	BOOTSTRAP_KERNEL_PMODE_CODE	BOOTSTRAP_KERNEL_PMODE+0x10
+
+; normal bootstrap runs on 0x7c00
+; this bootstrap runs at 0x3e offset, beyond the FAT mbr structure
 
 [BITS 16]
 [ORG 0x7C3E]

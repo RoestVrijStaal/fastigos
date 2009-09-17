@@ -105,6 +105,10 @@ void _start(void)
 		kernel_crash();
 	}
 
+	video_printstring(7, "Begin timer test (wait 5 seconds)\n");
+	timer_wait(5000);
+	video_printstring(7, "End test!\n");
+
 	printk("System up and running... (mainloop)");
 
 	while(1)
