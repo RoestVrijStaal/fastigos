@@ -16,7 +16,7 @@ void mutex_free(void *dir)
 	freeb((uint32_t)dir, 1);
 }
 
-uint8_t mutex_try_lock(uint32_t *dir)
+uint8_t mutex_try_lock(uint8_t *dir)
 {
 	__asm__ __volatile__("cli");
 	if ( *dir == 0 )
@@ -32,12 +32,12 @@ uint8_t mutex_try_lock(uint32_t *dir)
 	}
 }
 
-uint8_t mutex_try_unlock(uint32_t *dir)
+uint8_t mutex_try_unlock(uint8_t *dir)
 {
 	__asm__ __volatile__("cli");
 	if ( *dir == 1 )
 	{
-		dir = 0;
+		*dir = 0;
 		__asm__ __volatile__("sti");
 		return MUTEX_OK;
 	}

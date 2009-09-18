@@ -110,30 +110,17 @@ void _start(void)
 	timer_wait(5000);
 	video_printstring(7, "End test!\n");
 	*/
-	print_mem_bitmap();
 	void *test = mutex_create();
-	void *test2 = mutex_create();
-	print_mem_bitmap();
-	video_print_uint32(7,(uint32_t)test);
-	video_printstring(7, "\n");
-	video_print_uint32(7,(uint32_t)test2);
-	video_printstring(7, "\n");
-
+	mutex_try_lock(test);
 	video_print_uint8(7,mutex_try_lock(test));
 	video_printstring(7, "\n");
 	video_print_uint8(7,mutex_try_lock(test));
 	video_printstring(7, "\n");
-	video_print_uint8(7,mutex_try_lock(test2));
-	video_printstring(7, "\n");
-	video_print_uint8(7,mutex_try_lock(test2));
+	video_print_uint8(7,mutex_try_unlock(test));
 	video_printstring(7, "\n");
 	video_print_uint8(7,mutex_try_lock(test));
 	video_printstring(7, "\n");
-
-
 	mutex_free(test);
-	mutex_free(test2);
-	print_mem_bitmap();
 
 	printk("System up and running... (mainloop)");
 
