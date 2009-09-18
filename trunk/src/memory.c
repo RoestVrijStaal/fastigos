@@ -10,30 +10,24 @@
 
 #include "typedefs.h"
 #include "config.h"
+#include "video.h"
 
 #define MEMORY_MAP_BYTES 63
 
 uint8_t mem_register[MEMORY_MAP_BYTES];
-//uint32_t mem_list[MEMORY_MAP_BYTES * 8];
-/*
+
 void print_mem_bitmap(void)
 {
-	uint8_t block;
 	uint8_t pos_byte;
-	uint8_t pos_bit;
 
 	for (pos_byte=0; pos_byte <= MEMORY_MAP_BYTES; pos_byte++)
 	{
-		for ( pos_bit=0; pos_bit <= 7; pos_bit++)
-		{
-			block = mem_register[pos_byte] >> pos_bit & 0x01;
-			printf("%i", block);
-		}
-		printf(", ");
+		video_print_uint8(7, mem_register[pos_byte]);
+		video_printstring(7, " ");
 	}
-	printf("\n");
+	video_printstring(7,"\n");
 }
-*/
+
 void set_blocks(uint16_t numblocks, uint16_t byte, uint8_t bit)
 {
 	uint16_t i;
@@ -93,7 +87,7 @@ uint16_t block_malloc(uint16_t numblocks)
 	return 0;
 }
 
-uint32_t resb(uint32_t size)
+void *resb(uint32_t size)
 {
 	uint32_t i;
 	uint16_t blocks;
@@ -101,7 +95,7 @@ uint32_t resb(uint32_t size)
 	blocks = ( size / 65536 ) +1;
 	i = block_malloc(blocks);
 	i = i * 65536;
-	return i;
+	return (void *)i;
 }
 void freeb(uint32_t base, uint32_t size)
 {

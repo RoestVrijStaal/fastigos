@@ -1,3 +1,4 @@
 void mm_init(void);
-uint32_t resb(uint32_t size);
+void *resb(uint32_t size);
 void freeb(uint32_t base, uint32_t size);
+void print_mem_bitmap(void);

@@ -32,6 +32,10 @@ all:
 	gcc $(CFLAGS_INTEL) -S rtc.c -o rtc.S
 	as rtc.S -o rtc.o
 
+	gcc $(CFLAGS_INTEL) -S mutex.c -o mutex.S
+	as mutex.S -o mutex.o
+
+
 	#drivers
 	gcc $(CFLAGS_INTEL) -S drivers/video.c -o video.S
 	as video.S -o video.o
@@ -39,7 +43,7 @@ all:
 	gcc $(CFLAGS_INTEL) -S drivers/fdc.c -o fdc.S
 	as fdc.S -o fdc.o
 
-	ld kernel.o util.o video.o string.o segments.o pic.o fdc.o pit.o memory.o rtc.o --warn-common -T linker.ld -strip-all -o kernel_code.bin
+	ld kernel.o util.o video.o string.o segments.o pic.o fdc.o pit.o memory.o rtc.o mutex.o --warn-common -T linker.ld -strip-all -o kernel_code.bin
 	dd if=kernel_signature.bin of=kernel.bin bs=1 count=16
 	dd if=kernel_code.bin of=kernel.bin conv=notrunc bs=1 seek=16
 	dd if=kernel.bin of=../fda.img bs=1 conv=notrunc seek=512

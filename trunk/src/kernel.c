@@ -9,6 +9,7 @@
 #include "memory.h"
 #include "rtc.h"
 #include "util.h"
+#include "mutex.h"
 
 static inline void outb(uint16_t port, uint8_t data)
 {
@@ -104,10 +105,35 @@ void _start(void)
 		video_printstring(7, ")\n");
 		kernel_crash();
 	}
-
+	/*
 	video_printstring(7, "Begin timer test (wait 5 seconds)\n");
 	timer_wait(5000);
 	video_printstring(7, "End test!\n");
+	*/
+	print_mem_bitmap();
+	void *test = mutex_create();
+	void *test2 = mutex_create();
+	print_mem_bitmap();
+	video_print_uint32(7,(uint32_t)test);
+	video_printstring(7, "\n");
+	video_print_uint32(7,(uint32_t)test2);
+	video_printstring(7, "\n");
+
+	video_print_uint8(7,mutex_try_lock(test));
+	video_printstring(7, "\n");
+	video_print_uint8(7,mutex_try_lock(test));
+	video_printstring(7, "\n");
+	video_print_uint8(7,mutex_try_lock(test2));
+	video_printstring(7, "\n");
+	video_print_uint8(7,mutex_try_lock(test2));
+	video_printstring(7, "\n");
+	video_print_uint8(7,mutex_try_lock(test));
+	video_printstring(7, "\n");
+
+
+	mutex_free(test);
+	mutex_free(test2);
+	print_mem_bitmap();
 
 	printk("System up and running... (mainloop)");
 
