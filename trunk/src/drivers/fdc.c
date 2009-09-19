@@ -261,7 +261,6 @@ int8_t fdc_seek(uint8_t drive, uint8_t cylinder)
 {
 	int8_t ready;
 	int8_t drive_b;
-	uint8_t timeout;
 
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
@@ -285,18 +284,9 @@ int8_t fdc_seek(uint8_t drive, uint8_t cylinder)
 		video_printstring(7,"DEBUG: fdc seek commnand error\n");
 		return FDC_ERROR;
 	}
-	timeout = 0;
-	while (!fdc.wait_irq)
-	{
-		timer_wait(100);
-		if ( timeout == 10)
-		{
-			video_printstring(7,"DEBUG: fdc seek commnand timeout\n");
-			return FDC_ERROR;
-		}
-		timeout++;
-	}
 	// Result phase
+	fdc_sense_interrupt_status();
+	video_print_uint8(7, fdc.pcn);
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{

@@ -95,9 +95,6 @@ void _start(void)
 	}
 	fdc_recalibrate(0X0);
 	fdc_seek(0x0, 0x2);
-	fdc_sense_interrupt_status();
-	video_print_uint8(7,fdc.pcn);
-
 	printk("System up and running... (mainloop)");
 
 	while(1)
