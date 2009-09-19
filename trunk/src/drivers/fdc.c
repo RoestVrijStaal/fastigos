@@ -42,17 +42,6 @@ enum FloppyCommands
    SCAN_HIGH_OR_EQUAL =         29
 };
 
-/*
- * fdc status structure
- */
-struct fdc_s
-{
-	uint8_t		wait_irq;
-	uint8_t		type;
-	uint8_t		st0;
-	uint8_t		pcn;
-} fdc;
-
 static __inline__ void outb(uint16_t port, uint8_t data)
 {
 	// intel syntax!
@@ -229,7 +218,7 @@ int8_t fdc_recalibrate(uint8_t drive)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		video_printstring(7,"DEBUG: fdc recalibrate commnand error\n");
 		return FDC_ERROR;
 	}
 	drive_b = drive & 0x03;
@@ -262,13 +251,84 @@ int8_t fdc_recalibrate(uint8_t drive)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		video_printstring(7,"DEBUG: fdc recalibrate commnand error\n");
 		return FDC_ERROR;
 	}
 	return FDC_OK;
 }
 
+int8_t fdc_seek(uint8_t drive, uint8_t cylinder)
+{
+	int8_t ready;
+	int8_t drive_b;
+	uint8_t timeout;
 
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc seek commnand error\n");
+		return FDC_ERROR;
+	}
+	drive_b = drive & 0x03;
+	fdc.wait_irq = FALSE;
+	install_idt_handler(IRQ_FDC, (uint32_t)irq_fdc);
+
+	// Command phase
+	outb(FDC_DATA, FDC_COMMAND_SEEK);
+	outb(FDC_DATA, drive_b);
+	outb(FDC_DATA, cylinder);
+
+	// Execution phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc seek commnand error\n");
+		return FDC_ERROR;
+	}
+	timeout = 0;
+	while (!fdc.wait_irq)
+	{
+		timer_wait(100);
+		if ( timeout == 10)
+		{
+			video_printstring(7,"DEBUG: fdc seek commnand timeout\n");
+			return FDC_ERROR;
+		}
+		timeout++;
+	}
+	// Result phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc seek commnand error\n");
+		return FDC_ERROR;
+	}
+	return FDC_OK;
+}
+
+int8_t fdc_sense_interrupt_status(void)
+{
+	int8_t ready;
+
+	// pag 30
+	// Result phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error\n");
+		return FDC_ERROR;
+	}
+	outb(FDC_DATA, FDC_COMMAND_SENSE_INTERRUPT_STATUS);
+	fdc.st0 = inb(FDC_DATA);
+	fdc.pcn = inb(FDC_DATA);
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error\n");
+		return FDC_ERROR;
+	}
+	return FDC_OK;
+}
 
 
 

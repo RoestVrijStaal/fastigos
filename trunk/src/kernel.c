@@ -93,20 +93,11 @@ void _start(void)
 			kernel_crash();
 		}
 	}
-	//fdc_specify(uint8_t srt, uint8_t hut, uint8_t hlt);
-	//fdc_configure(uint8_t eis, uint8_t efifo, uint8_t poll, uint8_t fifothr, uint8_t pretrk);	
-	//fdc_recalibrate(uint8_t drive);
+	fdc_recalibrate(0X0);
+	fdc_seek(0x0, 0x2);
+	fdc_sense_interrupt_status();
+	video_print_uint8(7,fdc.pcn);
 
-	/* wait
-	timer_wait(5000);
-	*/
-
-	/* mutex
-	void *test = mutex_create();
-	mutex_try_lock(test);
-	mutex_try_unlock(test);
-	mutex_free(test);
-	*/
 	printk("System up and running... (mainloop)");
 
 	while(1)
