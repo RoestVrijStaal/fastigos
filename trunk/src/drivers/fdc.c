@@ -22,7 +22,7 @@ enum FloppyRegisters
 enum FloppyCommands
 {
    READ_TRACK =                 2,
-   SPECIFY =                    3,
+   SPECIFY =                    0x3,
    SENSE_DRIVE_STATUS =         4,
    WRITE_DATA =                 5,
    READ_DATA =                  6,
@@ -53,19 +53,238 @@ struct fdc_s
 	uint8_t		pcn;
 } fdc;
 
-static inline void outb(uint16_t port, uint8_t data)
+static __inline__ void outb(uint16_t port, uint8_t data)
 {
 	// intel syntax!
 	__asm__ __volatile__("out %0, %b1"::"d"(port),"a"(data));
 }
 
-static __inline__ unsigned char inb(unsigned short port)
+static __inline__ uint8_t inb(uint16_t port)
 {
    unsigned char ret;
-   asm volatile ("inb %0,%1":"=a"(ret):"Nd"(port));
+   asm volatile ("inb %0, %1":"=a"(ret):"Nd"(port));
    return ret;
 }
 
+void fdc_skel()
+{
+	// DMA/non-DMA in SPECIFY command
+	// FIFO threshold in CONFIGURE command
+
+
+	// examine RQM=1 and DIO=0 bits of MSR
+	// RQM bit 7
+	// DIO bit 6
+
+	// Command phase
+
+	// examine RQM=0 of MSR
+
+	// Execution phase
+
+	// Result phase
+	// int recived
+	// examine RQM=1 and DIO=1 bits of MSR
+	// read data from FIFO
+	// examine RQM=1 and DIO=0 bits of MSR
+}
+
+void irq_fdc(void)
+{
+	__asm__ __volatile__("pusha");
+	__asm__ __volatile__("cli");
+
+	fdc.wait_irq = TRUE;
+
+	outb(PIC1_CMD, PIC_EOI);
+	__asm__ __volatile__("sti");
+	__asm__ __volatile__("popa; leave; iret"); /* BLACK MAGIC! */
+}
+
+int8_t fdc_readyforcommand()
+{
+	uint8_t status;
+	uint8_t timeout;
+
+	for (timeout=0; timeout <= 3; timeout++)
+	{
+		status = inb(MAIN_STATUS_REGISTER);
+		status = status >> 6;
+		if ( status == 0x2 )
+		{
+			//RQM=1
+			//DIO=0
+			// yeah, fdc ready for command!
+			return FDC_OK;
+		}
+		timer_wait(200);		// wait 200ms (arbitrary wait)
+	}
+	// other case... fdc not ready
+	video_printstring(7,"DEBUG: fdc ready for command timeout!\n");
+	return FDC_ERROR;
+}
+
+int8_t fdc_specify(uint8_t srt, uint8_t hut, uint8_t hlt)
+{
+	//fdc_specify(0xd, 0xf, 0x1);
+
+	uint8_t ready;
+	uint8_t srthut_b;
+	uint8_t hlt_b;
+
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc specify commnand error\n");
+		return FDC_ERROR;
+	}
+	// Command phase
+	outb(FDC_DATA, FDC_COMMAND_SPECIFY);
+	/*
+	SRT = 4bit
+	HUT = 4bit
+	*/
+	srthut_b = srt << 4;
+	srthut_b = srthut_b + hut;
+	outb(FDC_DATA, srthut_b);
+	/*
+	HLT = 7bit
+	*/
+	hlt_b = hlt << 1;
+	outb(FDC_DATA, hlt_b);
+
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc specify commnand error\n");
+		return FDC_ERROR;
+	}
+
+	return FDC_OK;
+}
+
+int8_t fdc_version()
+{
+	uint8_t ready;
+
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc version commnand error\n");
+		return FDC_ERROR;
+	}
+	// Command phase
+	outb(FDC_DATA, FDC_COMMAND_VERSION);
+	fdc.type = inb(FDC_DATA);
+	// Result phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc version commnand error\n");
+		return FDC_ERROR;
+	}
+
+	return fdc.type;
+}
+
+int8_t fdc_configure(uint8_t eis, uint8_t efifo, uint8_t poll, uint8_t fifothr, uint8_t pretrk)
+{
+	uint8_t ready;
+	uint8_t cfg_b;
+
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		return FDC_ERROR;
+	}
+
+	fifothr = fifothr & 0x0f;
+	poll = (poll & 0x01) << 4;
+	efifo = (efifo & 0x01) << 5;
+	eis = (eis & 0x01) << 6;
+	cfg_b = eis + efifo + poll + fifothr;
+	// Command phase
+	outb(FDC_DATA, FDC_COMMAND_CONFIGURE);
+	outb(FDC_DATA, 0x0);
+	outb(FDC_DATA, cfg_b);
+	outb(FDC_DATA, pretrk);
+	// Result phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		return FDC_ERROR;
+	}
+
+	return FDC_OK;
+}
+
+int8_t fdc_recalibrate(uint8_t drive)
+{
+	int8_t ready;
+	int8_t drive_b;
+	uint8_t timeout;
+
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		return FDC_ERROR;
+	}
+	drive_b = drive & 0x03;
+	fdc.wait_irq = FALSE;
+	install_idt_handler(IRQ_FDC, (uint32_t)irq_fdc);
+
+	// Command phase
+	outb(FDC_DATA, FDC_COMMAND_RECALIBRATE);
+	outb(FDC_DATA, drive_b);
+
+	// Execution phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc recalibrate commnand error\n");
+		return FDC_ERROR;
+	}
+	timeout = 0;
+	while (!fdc.wait_irq)
+	{
+		timer_wait(100);
+		if ( timeout == 10)
+		{
+			video_printstring(7,"DEBUG: fdc recalibrate commnand timeout\n");
+			return FDC_ERROR;
+		}
+		timeout++;
+	}
+	// Result phase
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		return FDC_ERROR;
+	}
+	return FDC_OK;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 uint8_t fdc_motoron(uint8_t drive)
 {
 	uint8_t sendbyte;
@@ -103,18 +322,6 @@ uint8_t fdc_motoroff()
 
 	outb(FDC_DOR, sendbyte);
 	return FDC_OK;
-}
-
-void irq_fdc(void)
-{
-	__asm__ __volatile__("pusha");
-	__asm__ __volatile__("cli");
-
-	fdc.wait_irq = TRUE;
-
-	outb(PIC1_CMD, PIC_EOI);
-	__asm__ __volatile__("sti");
-	__asm__ __volatile__("popa; leave; iret"); /* BLACK MAGIC! */
 }
 
 int8_t fdc_sendbyte(uint8_t byte)
@@ -169,8 +376,8 @@ uint8_t fdc_reset(void)
 		fdc.pcn = inb(FDC_DATA);
 	}
 	outb(FDC_DATA, FDC_COMMAND_SPECIFY);
-	outb(FDC_DATA, 0xdf); /* SRT = 3ms, HUT = 240ms */
-	outb(FDC_DATA, 0x2); /* HLT = 16ms, ND = 0 */
+	outb(FDC_DATA, 0xdf); // SRT = 3ms, HUT = 240ms
+	outb(FDC_DATA, 0x2); // HLT = 16ms, ND = 0
 	inb(FDC_DATA);
 	return FDC_OK;
 }
@@ -181,3 +388,4 @@ uint8_t fdc_identify(void)
 	fdc.type = inb(FDC_DATA);
 	return fdc.type;
 }
+*/

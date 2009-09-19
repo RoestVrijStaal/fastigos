@@ -1,6 +1,6 @@
 #define FDC_OK					0
-#define FDC_ERROR				1
-#define FDC_TIMEOUT				-1
+#define FDC_ERROR				-1
+#define FDC_TIMEOUT				-2
 
 
 #define FDC_SRA					0x3f0
@@ -14,10 +14,11 @@
 #define FDC_CCR					0x3f7
 
 #define FDC_COMMAND_SPECIFY			0x3
+#define FDC_COMMAND_RECALIBRATE			0x7
 #define FDC_COMMAND_SENSE_INTERRUPT_STATUS	0x8
 #define FDC_COMMAND_VERSION			0x10
+#define FDC_COMMAND_CONFIGURE			0x13
 
-#define FDC_VERSION_IS_STANDARD			0x0
 #define FDC_VERSION_IS_ENHANCED			0x90
 
 #define	FDC_D0					0x1c
@@ -25,8 +26,8 @@
 #define	FDC_D2					0x4e
 #define	FDC_D3					0x8f
 
-uint8_t fdc_identify(void);
-uint8_t fdc_reset(void);
-uint8_t fdc_motoron(uint8_t drive);
-uint8_t fdc_motoroff();
+int8_t fdc_specify(uint8_t srt, uint8_t hut, uint8_t hlt);
+int8_t fdc_version();
+int8_t fdc_configure(uint8_t eis, uint8_t efifo, uint8_t poll, uint8_t fifothr, uint8_t pretrk);
+int8_t fdc_recalibrate(uint8_t drive);
 

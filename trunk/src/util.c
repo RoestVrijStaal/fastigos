@@ -2,16 +2,16 @@
 #include "video.h"
 #include "config.h"
 
-static inline void outb(uint16_t port, uint8_t data)
+static __inline__ void outb(uint16_t port, uint8_t data)
 {
 	// intel syntax!
 	__asm__ __volatile__("out %0, %b1"::"d"(port),"a"(data));
 }
 
-static __inline__ unsigned char inb(unsigned short port)
+static __inline__ uint8_t inb(uint16_t port)
 {
    unsigned char ret;
-   asm volatile ("inb %0,%1":"=a"(ret):"Nd"(port));
+   asm volatile ("inb %0, %1":"=a"(ret):"Nd"(port));
    return ret;
 }
 
@@ -49,3 +49,4 @@ void cmosdump(void)
 	}
 	video_printstring(7, "\n\n");
 }
+

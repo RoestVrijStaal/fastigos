@@ -8,21 +8,8 @@
 #include "fdc.h"
 #include "memory.h"
 #include "rtc.h"
-#include "util.h"
 #include "mutex.h"
-
-static inline void outb(uint16_t port, uint8_t data)
-{
-	// intel syntax!
-	__asm__ __volatile__("out %0, %b1"::"d"(port),"a"(data));
-}
-
-static __inline__ unsigned char inb(unsigned short port)
-{
-   unsigned char ret;
-   asm volatile ("inb %0,%1":"=a"(ret):"Nd"(port));
-   return ret;
-}
+#include "util.h"
 
 void _start(void)
 {
@@ -82,29 +69,34 @@ void _start(void)
 	mm_init();
 	video_printstring(7, "OK\n");
 
+	/*
 	video_printstring(7, "Init FDC...\n");
 
 	video_printstring(7, "Reset FDC...");
-	//fdc_reset();
+	fdc_reset();
 	video_printstring(7, "TODO\n");
+	*/
 
-	uint8_t fdc_type = fdc_identify();
-	if ( fdc_type == FDC_VERSION_IS_ENHANCED )
+
+	int8_t fdc_type = fdc_version();
+	if ( fdc_type != FDC_ERROR )
 	{
-		video_printstring(7, "fdc > Model 82077AA detected\n");
+		if ( (uint8_t)fdc_type == FDC_VERSION_IS_ENHANCED )
+		{
+			video_printstring(7, "fdc > Model 82077AA detected\n");
+		}
+		else
+		{
+			video_printstring(7, "fdc > Unknown floppy disk controller! (");
+			video_print_uint8(14, fdc_type);
+			video_printstring(7, ")\n");
+			kernel_crash();
+		}
 	}
-	else if ( fdc_type == FDC_VERSION_IS_STANDARD )
-	{
-		video_printstring(7, "fdc > Model 8272A/765A detected (not supported)\n");
-		kernel_crash();
-	}
-	else
-	{
-		video_printstring(7, "fdc > Unknown floppy disk controller! (");
-		video_print_uint8(14, fdc_type);
-		video_printstring(7, ")\n");
-		kernel_crash();
-	}
+	//fdc_specify(uint8_t srt, uint8_t hut, uint8_t hlt);
+	//fdc_configure(uint8_t eis, uint8_t efifo, uint8_t poll, uint8_t fifothr, uint8_t pretrk);	
+	//fdc_recalibrate(uint8_t drive);
+
 	/* wait
 	timer_wait(5000);
 	*/
