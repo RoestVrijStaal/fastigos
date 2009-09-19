@@ -105,23 +105,16 @@ void _start(void)
 		video_printstring(7, ")\n");
 		kernel_crash();
 	}
-	/*
-	video_printstring(7, "Begin timer test (wait 5 seconds)\n");
+	/* wait
 	timer_wait(5000);
-	video_printstring(7, "End test!\n");
 	*/
+
+	/* mutex
 	void *test = mutex_create();
 	mutex_try_lock(test);
-	video_print_uint8(7,mutex_try_lock(test));
-	video_printstring(7, "\n");
-	video_print_uint8(7,mutex_try_lock(test));
-	video_printstring(7, "\n");
-	video_print_uint8(7,mutex_try_unlock(test));
-	video_printstring(7, "\n");
-	video_print_uint8(7,mutex_try_lock(test));
-	video_printstring(7, "\n");
+	mutex_try_unlock(test);
 	mutex_free(test);
-
+	*/
 	printk("System up and running... (mainloop)");
 
 	while(1)
