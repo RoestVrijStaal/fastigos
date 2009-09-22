@@ -26,18 +26,6 @@
 [ORG 0x7C3E]
 _start:
 	jmp	configure_stack
-cursor:
-.c:	db	0
-.l:	db	0
-; ############################################################################
-; ### Save cursor for kernel
-; ############################################################################
-save_cursor:
-	mov	AH, 0x3
-	int	0x10
-	mov	[cursor.c], DL
-	mov	[cursor.l], DH
-	ret
 configure_stack:
 	cli						; disable interrupts
 
@@ -123,10 +111,6 @@ verify_kernel_signature:
 	jne	print_kernel_nomatch
 	loop	.verifyloop
 alldone:
-	mov	AX, 0
-	mov	ES, AX
-	call	save_cursor
-
 to_pmode:
 	lidt	[idtinfo]			; load IDT
 	lgdt	[gdtinfo]			; load GDT

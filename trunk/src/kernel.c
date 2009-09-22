@@ -104,20 +104,9 @@ void _start(void)
 			kernel_crash();
 		}
 	}
-	/*
 	fdc_recalibrate(0X0);
 	fdc_seek(0x0, 0x2);
 	fdc_read(0x0, 0x0, 0x0);
-	*/
-
-	// test for obtain the cursor offset
-	uint8_t x, y;
-	outb(0x3d4, 0x0e);		/* Get cursor low byte position	*/
-	x = inb(0x3d5);
-	outb(0x3d4, 0x0f);		/* And add cursor high byte position	*/
-	y= inb(0x3d5);
-	video_print_uint8(7, x);
-	video_print_uint8(7, y);
 
 	video_printstring(7, "System up and running... (mainloop)");
 	while(1)

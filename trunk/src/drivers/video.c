@@ -20,16 +20,16 @@ volatile uint32_t	cursor_offset;
 
 void video_init(void)
 {
-	uint8_t	*c;
-	uint8_t *l;
+	uint8_t	l, h;
 
-	// the bootstrap saves here the cursor
-	c = (uint8_t *)0x7C41;
-	l = (uint8_t *)0x7C42;
+	outb(0x3d4, 0x0e);		/* Get cursor high byte position	*/
+	h = inb(0x3d5);
+	outb(0x3d4, 0x0f);		/* And low byte	*/
+	l = inb(0x3d5);
 
-	cursor_offset = SCREEN_COLS * *l;
-	cursor_offset = cursor_offset + *c;
-	cursor_offset = cursor_offset * 2;
+	cursor_offset = 0;
+	cursor_offset = h << 8;
+	cursor_offset = (cursor_offset + l) * 2;
 }
 
 void printk(char *string)
