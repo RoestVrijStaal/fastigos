@@ -14,9 +14,9 @@
 void _start(void)
 {
 	video_init();
-	video_printstring(14,"fastigOS is here!\n");
+	video_printstring(14,"fastigOS is here! (Caramel Man No 4: Obokaman)\n");
 
-	cmosdump();
+	//cmosdump();
 	/*
 	char cpuid[13];
 	char *cpuid0;
@@ -95,6 +95,7 @@ void _start(void)
 	}
 	fdc_recalibrate(0X0);
 	fdc_seek(0x0, 0x2);
+
 	printk("System up and running... (mainloop)");
 
 	while(1)

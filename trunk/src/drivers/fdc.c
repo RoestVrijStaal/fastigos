@@ -124,7 +124,7 @@ int8_t fdc_specify(uint8_t srt, uint8_t hut, uint8_t hlt)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc specify commnand error\n");
+		video_printstring(7,"DEBUG: fdc specify commnand error (not ready)\n");
 		return FDC_ERROR;
 	}
 	// Command phase
@@ -145,7 +145,7 @@ int8_t fdc_specify(uint8_t srt, uint8_t hut, uint8_t hlt)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc specify commnand error\n");
+		video_printstring(7,"DEBUG: fdc specify commnand error (unfinished command)\n");
 		return FDC_ERROR;
 	}
 
@@ -159,7 +159,7 @@ int8_t fdc_version()
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc version commnand error\n");
+		video_printstring(7,"DEBUG: fdc version commnand error (not ready)\n");
 		return FDC_ERROR;
 	}
 	// Command phase
@@ -169,7 +169,7 @@ int8_t fdc_version()
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc version commnand error\n");
+		video_printstring(7,"DEBUG: fdc version commnand error (unfinished command)\n");
 		return FDC_ERROR;
 	}
 
@@ -184,7 +184,7 @@ int8_t fdc_configure(uint8_t eis, uint8_t efifo, uint8_t poll, uint8_t fifothr, 
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		video_printstring(7,"DEBUG: fdc configure commnand error (not ready)\n");
 		return FDC_ERROR;
 	}
 
@@ -202,7 +202,7 @@ int8_t fdc_configure(uint8_t eis, uint8_t efifo, uint8_t poll, uint8_t fifothr, 
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc configure commnand error\n");
+		video_printstring(7,"DEBUG: fdc configure commnand error (unfinished command)\n");
 		return FDC_ERROR;
 	}
 
@@ -218,7 +218,7 @@ int8_t fdc_recalibrate(uint8_t drive)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc recalibrate commnand error\n");
+		video_printstring(7,"DEBUG: fdc recalibrate commnand error (not ready)\n");
 		return FDC_ERROR;
 	}
 	drive_b = drive & 0x03;
@@ -251,7 +251,7 @@ int8_t fdc_recalibrate(uint8_t drive)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc recalibrate commnand error\n");
+		video_printstring(7,"DEBUG: fdc recalibrate commnand error (unfinished command)\n");
 		return FDC_ERROR;
 	}
 	return FDC_OK;
@@ -281,16 +281,45 @@ int8_t fdc_seek(uint8_t drive, uint8_t cylinder)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc seek commnand error\n");
+		video_printstring(7,"DEBUG: fdc seek error, controller not ready\n");
 		return FDC_ERROR;
 	}
 	// Result phase
 	fdc_sense_interrupt_status();
-	video_print_uint8(7, fdc.pcn);
+	// st0 = IC 2, SE 1, EC 1, 0, H 1, DS 2
+	// IC = 0x0 = ok 
+	// IC = 0x1 = abnormal
+	// IC = 0x2 = invalid command
+	// IC = 0x3 = Abnormal termination (polling)
+	// SE = Seek end
+	// EC = ??
+	// H = Current head address ?
+	// Drive select
+	if (fdc.st0 >> 6 != 0x0 )	// is IC ok?
+	{
+		// error in command?
+		video_printstring(7,"DEBUG: fdc seek response error pcn=");
+		video_print_uint8(7, fdc.pcn);
+		video_printstring(7," st0=");
+		video_print_uint8(7, fdc.st0);
+		video_printstring(7," cylinder=");
+		video_print_uint8(7, cylinder);
+
+		video_printstring(7,"\n");
+		return FDC_ERROR;
+	}
+	if (fdc.pcn != cylinder )
+	{
+		video_printstring(7,"DEBUG: fdc seek cylinder error st0= ");
+		video_print_uint8(7, fdc.st0);
+		video_printstring(7,"\n");
+		return FDC_ERROR;
+	}
+	// the head is pointing to correct cylinder
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc seek commnand error\n");
+		video_printstring(7,"DEBUG: fdc seek commnand end error\n");
 		return FDC_ERROR;
 	}
 	return FDC_OK;
@@ -305,7 +334,7 @@ int8_t fdc_sense_interrupt_status(void)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error\n");
+		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error (not ready)\n");
 		return FDC_ERROR;
 	}
 	outb(FDC_DATA, FDC_COMMAND_SENSE_INTERRUPT_STATUS);
@@ -314,12 +343,47 @@ int8_t fdc_sense_interrupt_status(void)
 	ready = fdc_readyforcommand();
 	if (ready != FDC_OK)
 	{
-		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error\n");
+		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error \n");
 		return FDC_ERROR;
 	}
 	return FDC_OK;
 }
 
+uint8_t fdc_read()
+{
+	// DMA/non-DMA in SPECIFY command
+	// FIFO threshold in CONFIGURE command
+
+
+	// examine RQM=1 and DIO=0 bits of MSR
+	// RQM bit 7
+	// DIO bit 6
+
+	// Command phase
+	// WRITE MT, MFM, SK, 00110
+	// WRITE 00000,HDS, DS1, DS0
+	// WRITE C
+	// WRITE H
+	// WRITE R
+	// WRITE N
+	// WRITE EOT
+	// WRITE GPL
+	// WRITE DTL
+
+	// Execution phase
+
+	// Result phase
+
+	// READ ST0
+	// READ ST1
+	// READ ST2
+	// READ C
+	// READ H
+	// READ R
+	// READ N
+
+	return FDC_OK;
+}
 
 
 
