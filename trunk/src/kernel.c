@@ -11,11 +11,23 @@
 #include "mutex.h"
 #include "util.h"
 
+static __inline__ void outb(uint16_t port, uint8_t data)
+{
+	// intel syntax!
+	__asm__ __volatile__("out %0, %b1"::"d"(port),"a"(data));
+}
+
+static __inline__ uint8_t inb(uint16_t port)
+{
+   unsigned char ret;
+   asm volatile ("inb %0, %1":"=a"(ret):"Nd"(port));
+   return ret;
+}
+
 void _start(void)
 {
 	video_init();
 	video_printstring(14,"fastigOS is here! (Caramel Man No 4: Obokaman)\n");
-
 	//cmosdump();
 	/*
 	char cpuid[13];
@@ -68,7 +80,6 @@ void _start(void)
 	video_printstring(7, ") Init MM...");
 	mm_init();
 	video_printstring(7, "OK\n");
-
 	/*
 	video_printstring(7, "Init FDC...\n");
 
@@ -93,11 +104,22 @@ void _start(void)
 			kernel_crash();
 		}
 	}
+	/*
 	fdc_recalibrate(0X0);
 	fdc_seek(0x0, 0x2);
+	fdc_read(0x0, 0x0, 0x0);
+	*/
 
-	printk("System up and running... (mainloop)");
+	// test for obtain the cursor offset
+	uint8_t x, y;
+	outb(0x3d4, 0x0e);		/* Get cursor low byte position	*/
+	x = inb(0x3d5);
+	outb(0x3d4, 0x0f);		/* And add cursor high byte position	*/
+	y= inb(0x3d5);
+	video_print_uint8(7, x);
+	video_print_uint8(7, y);
 
+	video_printstring(7, "System up and running... (mainloop)");
 	while(1)
 	{
 		__asm__("hlt");

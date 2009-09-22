@@ -3,27 +3,20 @@
 #include "video.h"
 #include "pit.h"
 
-// fastigOS driver interface
-volatile uint32_t init=(uint32_t)&video_init;
-volatile uint32_t read=(uint32_t)&video_read;
-volatile uint32_t write=(uint32_t)&video_write;
-volatile uint32_t fini=(uint32_t)&video_fini;
+static __inline__ void outb(uint16_t port, uint8_t data)
+{
+	// intel syntax!
+	__asm__ __volatile__("out %0, %b1"::"d"(port),"a"(data));
+}
+
+static __inline__ uint8_t inb(uint16_t port)
+{
+   unsigned char ret;
+   asm volatile ("inb %0, %1":"=a"(ret):"Nd"(port));
+   return ret;
+}
 
 volatile uint32_t	cursor_offset;
-
-void video_fini(void)
-{
-}
-
-uint8_t *video_read(void)
-{
-	return 0x0;
-}
-
-void video_write(uint8_t *string)
-{
-	video_printstring(7, (char *)string);
-}
 
 void video_init(void)
 {
@@ -89,12 +82,6 @@ void video_printc(int color, char *byte)
 {
 	volatile char *video=(volatile char *)0xB8000;
 
-	if ( cursor_offset >= ( ( SCREEN_COLS * SCREEN_LINES ) *2 ) )
-	{
-		video_scroll();
-		cursor_offset=( ( SCREEN_COLS * SCREEN_LINES ) *2 ) - ( SCREEN_COLS *2);
-	}
-
 	video+=cursor_offset;
 	if ( ( *byte >= 32 ) && ( *byte <= 126 ) )
 	{ 
@@ -107,6 +94,13 @@ void video_printc(int color, char *byte)
 	else if ( *byte == '\n')
 	{
 		cursor_offset = (SCREEN_COLS *2) * (1 + cursor_offset / (SCREEN_COLS *2));
+	}
+
+	if ( cursor_offset >= ( ( SCREEN_COLS * (SCREEN_LINES) ) *2 ) )
+	{
+		video_scroll();
+		//cursor_offset=( ( SCREEN_COLS * SCREEN_LINES ) *2 ) - ( SCREEN_COLS *2);
+		cursor_offset=( SCREEN_COLS * (SCREEN_LINES-1) ) *2;
 	}
 }
 
@@ -124,9 +118,17 @@ void video_printstring(int color, char *string)
 void video_setcursor()
 {
 	volatile uint16_t	real_cursor_offset;
+	volatile uint8_t	temp;
 
 	real_cursor_offset = cursor_offset/2;
+	outb(0x3d4, 0x0f);
+	temp = (uint8_t)real_cursor_offset;
+	outb(0x3d5, temp);
+	outb(0x3d4, 0x0e);
+	temp = real_cursor_offset >> 8;
+	outb(0x3d5, temp);
 
+	/*
 	__asm__("mov AL, 0x0f");
 	__asm__("mov DX, 0x3d4");
 	__asm__("out DX, AL");
@@ -143,7 +145,7 @@ void video_setcursor()
 	__asm__("mov AL, AH");
 	__asm__("mov DX, 0x3d5");
 	__asm__("out DX, AL");
-
+	*/
 }
 
 void video_print_uint32(int color, uint32_t number)

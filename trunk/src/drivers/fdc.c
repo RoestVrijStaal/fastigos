@@ -6,6 +6,17 @@
 #include "fdc.h"
 #include "pic.h"
 
+/*
+ * fdc status structure
+ */
+struct fdc_s
+{
+	uint8_t		wait_irq;
+	uint8_t		type;
+	uint8_t		st0;
+	uint8_t		pcn;
+} fdc;
+
 enum FloppyRegisters
 {
    STATUS_REGISTER_A                = 0x3F0, // read-only
@@ -349,17 +360,73 @@ int8_t fdc_sense_interrupt_status(void)
 	return FDC_OK;
 }
 
-uint8_t fdc_read()
+void irq_fdc_transfer(void)
 {
-	// DMA/non-DMA in SPECIFY command
-	// FIFO threshold in CONFIGURE command
+	__asm__ __volatile__("pusha");
+	__asm__ __volatile__("cli");
 
+	// fdc.wait_irq = TRUE;
+	video_printstring(7,"Data recived\n");
 
-	// examine RQM=1 and DIO=0 bits of MSR
-	// RQM bit 7
-	// DIO bit 6
+	outb(PIC1_CMD, PIC_EOI);
+	__asm__ __volatile__("sti");
+	__asm__ __volatile__("popa; leave; iret"); /* BLACK MAGIC! */
+}
+
+uint8_t fdc_read(uint8_t drive, uint8_t head, uint8_t cylinder)
+{
+	int8_t ready;
+	uint8_t head_and_drive;
+
+	ready = fdc_readyforcommand();
+	if (ready != FDC_OK)
+	{
+		video_printstring(7,"DEBUG: fdc sense interrupt status commnand error (not ready)\n");
+		return FDC_ERROR;
+	}
+
+	install_idt_handler(IRQ_FDC, (uint32_t)irq_fdc_transfer);
+
+	uint8_t mt = 0 << 7;
+	uint8_t mfm = 1 << 6;
+	uint8_t sk = 0 << 5;
+
+	outb(FDC_DATA, FDC_COMMAND_READ_DATA | mt | mfm | sk);
+
+	head_and_drive = ((head&0x1)<<2)+(drive&0x03) ;
+	//video_print_uint8(7, head_and_drive);
+	outb(FDC_DATA, head_and_drive);
+	outb(FDC_DATA, cylinder);
+
+	uint8_t h = 0x0;
+	outb(FDC_DATA, h);
+	uint8_t sector = 0x2;
+	outb(FDC_DATA, sector);
+	uint8_t sector_size = 0x2;
+	outb(FDC_DATA, sector_size);
+	uint8_t eot = 0x0;
+	outb(FDC_DATA, eot);
+	uint8_t gpl = 0x0;
+	outb(FDC_DATA, gpl);
+	uint8_t dtl = 0x0;
+	outb(FDC_DATA, dtl);
+
 
 	// Command phase
+
+	// MT = Multi track selector
+	// MFM = Double density
+	// SK = Skip flag
+	// HDS = head
+	// DS1/DS0 = disk select
+	// C = cylinder
+	// H = ????
+	// R = Sector
+	// N = sector size (0=128,1=256,2=512,3=1024...7=16k)
+	// EOT = end of track 
+	// GPL = Gap lenght (size between sectors)
+	// DTL = Special sector size
+
 	// WRITE MT, MFM, SK, 00110
 	// WRITE 00000,HDS, DS1, DS0
 	// WRITE C
