@@ -3,6 +3,7 @@
 #include "video.h"
 #include "pit.h"
 
+
 static __inline__ void outb(uint16_t port, uint8_t data)
 {
 	// intel syntax!
@@ -18,7 +19,7 @@ static __inline__ uint8_t inb(uint16_t port)
 
 volatile uint32_t	cursor_offset;
 
-void video_init(void)
+void video_getcursor(void)
 {
 	uint8_t	l, h;
 
@@ -32,16 +33,35 @@ void video_init(void)
 	cursor_offset = (cursor_offset + l) * 2;
 }
 
+void video_setcursorscanline(uint8_t start, uint8_t end)
+{
+	// configure cursor
+	start = start & 0x0f;
+	end = end & 0x0f;
+
+	outb(0x3d4, 0x0a);
+	outb(0x3d5, start);
+	outb(0x3d4, 0x0b);
+	outb(0x3d5, end);
+
+}
+
+void video_init(void)
+{
+	video_getcursor();
+	video_setcursorscanline(0x0, 0xff);
+}
+/*
 void printk(char *string)
 {
 	video_printstring(7, "[-] ");
 	video_printstring(7, string);
 	video_printstring(7, "\n");
 }
-
+*/
 void video_clear(void)
 {
-	volatile char *video=(volatile char *)0xB8000;
+	volatile char *video=(volatile char *)VIDEO_OFFSET_TEXT;
 	int c;
 
 	for (c=0;c<=4000;c=c+2)
@@ -55,9 +75,9 @@ void video_clear(void)
 }
 void video_scroll(void)
 {
-	volatile char *line=(volatile char *)0xB8000;
-	volatile char *nextline=(volatile char *)0xB8000+(SCREEN_COLS*2);
-	volatile char *lastline=(volatile char *)0xB8000+(SCREEN_COLS*(SCREEN_LINES-1))*2;
+	volatile char *line=(volatile char *)VIDEO_OFFSET_TEXT;
+	volatile char *nextline=(volatile char *)VIDEO_OFFSET_TEXT+(SCREEN_COLS*2);
+	volatile char *lastline=(volatile char *)VIDEO_OFFSET_TEXT+(SCREEN_COLS*(SCREEN_LINES-1))*2;
 
 	unsigned int c;
 
@@ -80,7 +100,7 @@ void video_scroll(void)
 
 void video_printc(int color, char *byte)
 {
-	volatile char *video=(volatile char *)0xB8000;
+	volatile char *video=(volatile char *)VIDEO_OFFSET_TEXT;
 
 	video+=cursor_offset;
 	if ( ( *byte >= 32 ) && ( *byte <= 126 ) )
@@ -136,7 +156,6 @@ void video_setcursor()
 	__asm__("mov AX, [%0]"::"m"(real_cursor_offset));
 	__asm__("mov DX, 0x3d5");
 	__asm__("out DX, AL");
-
 	__asm__("mov AL, 0x0e");
 	__asm__("mov DX, 0x3d4");
 	__asm__("out DX, AL");
@@ -201,4 +220,37 @@ void video_print_uint8(int color, uint8_t number)
 	video_setcursor();
 
 }
+
+
+/*
+#define RGB_RESET 0x03C6
+#define RGB_READ  0x03C7
+#define RGB_WRITE 0x03C8
+#define RGB_DATA  0x03C9
+
+void setwhite(void)
+{
+   outp(RGB_RESET, 0xFF);     // Prepare the VGA card
+   outp(RGB_WRITE, WHITE);    // Tell that we want to write the color 15 (WHITE)
+   outp(RGB_DATA, 64);        // Red value
+   outp(RGB_DATA, 64);        // Green value
+   outp(RGB_DATA, 64);        // Blue value
+}
+
+For setting all the 256 colors simply tell to the VGA card that we want to write the color 0, and next write the RGB of all the colors:
+
+
+void setpalette(char *palette)
+{
+   register int i;
+
+   outp(RGB_RESET, 0xFF);		// Prepare the VGA card
+   outp(RGB_WRITE, 0);                  // Tell that we want to write the entire palette
+   for(i=0;i<256;i++) {
+      outp(RGB_DATA, palette[i*3]);     // Red value
+      outp(RGB_DATA, palette[i*3+1]);   // Green value
+      outp(RGB_DATA, palette[i*3+2]);   // Blue value
+   }
+}
+*/
 

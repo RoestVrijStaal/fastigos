@@ -1,5 +1,6 @@
-#define SCREEN_COLS	80
-#define SCREEN_LINES	25
+#define VIDEO_OFFSET_TEXT	0xB8000
+#define SCREEN_COLS		80
+#define SCREEN_LINES		25
 
 void video_init(void);
 void video_clear(void);
