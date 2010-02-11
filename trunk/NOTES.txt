@@ -1,0 +1,277 @@
+
+	uint32_t maxcpuidbase;
+	uint32_t regs[4];
+	char *cpuvendor = regs;
+	cpuvendor +=4;
+
+	cpuid(0x0, &regs[0], &regs[1], &regs[3], &regs[2]);
+	maxcpuidbase = regs[0];
+	video_print_string(7, " * cpu vendor: ");
+	video_print_string(14, cpuvendor);
+	video_print_string(7, " (basic cpuidmax: ");
+	video_print_uint8(14, regs[0]);
+	video_print_string(7, ")\n");
+
+	if ( maxcpuidbase >= 0x1 )
+	{
+		cpuid(0x1, &regs[0], &regs[1], &regs[2], &regs[3]);
+		uint8_t stepping = regs[0] & 0x0000000f;
+		video_print_string(7, "stepping: ");
+		video_print_uint8(14, stepping);
+		video_print_string(7, "\n");
+
+		uint8_t model = ( regs[0] & 0x000000f0 ) >> 4;
+		video_print_string(7, "model: ");
+		video_print_uint8(14, model);
+		video_print_string(7, "\n");
+
+		uint8_t family = ( regs[0] & 0x00000f00 ) >> 8;
+		video_print_string(7, "family: ");
+		video_print_uint8(14, family);
+		video_print_string(7, "\n");
+
+		uint8_t type = ( regs[0] & 0x00003000 ) >> 12;
+		video_print_string(7, "type: ");
+		if (type == 0x0)
+		{
+			video_print_string(14, "Original OEM\n");
+		}
+		else if (type == 0x1)
+		{
+			video_print_string(14, "Overdrive\n");
+		}
+		else if (type == 0x2)
+		{
+			video_print_string(14, "Dual\n");
+		}
+		else if (type == 0x3)
+		{
+			video_print_string(14, "unknown (intel reserved)\n");
+		}
+		/*@TODO subjected to bugs*/
+		uint8_t extendedmodel = ( regs[0] & 0x0000c000 ) >> 16;
+		video_print_string(7, "extended Model: ");
+		video_print_uint8(14, extendedmodel);
+		video_print_string(7, "\n");
+
+		uint8_t extendedid = ( regs[0] & 0x0F000000 ) >> 20;
+		video_print_string(7, "extended ID: ");
+		video_print_uint8(14, extendedid);
+		video_print_string(7, "\n");
+
+		uint8_t brandindex = ( regs[1] & 0x00000000 );
+		video_print_string(7, "Brand index: ");
+		video_print_uint8(14, brandindex);
+		video_print_string(7, "\n");
+
+		uint8_t clflush = ( regs[1] & 0x00000000 ) >> 8;
+		video_print_string(7, "Cflush cache line size: ");
+		video_print_uint8(14, clflush);
+		video_print_string(7, "\n");
+	
+		uint8_t apicid = ( regs[1] & 0x00000000 ) >> 16;
+		video_print_string(7, "APIC id: ");
+		video_print_uint8(14, apicid);
+		video_print_string(7, "\n");
+
+		/*
+		uint8_t sse3 = ( regs[2] & 0x1 );
+		video_print_string(7, "SSE3: ");
+		video_print_uint8(14, sse3);
+		video_print_string(7, "\n");
+
+		uint8_t carryless = ( regs[2] & 0x2 );
+		video_print_string(7, "Carryless Multiplication: ");
+		video_print_uint8(14, carryless);
+		video_print_string(7, "\n");
+
+		uint8_t monitor = ( regs[2] & 0x4 );
+		video_print_string(7, "Monitor: ");
+		video_print_uint8(14, monitor);
+		video_print_string(7, "\n");
+
+		uint8_t cpl = ( regs[2] & 0x8 );
+		video_print_string(7, "CPL: ");
+		video_print_uint8(14, cpl);
+		video_print_string(7, "\n");
+
+		uint8_t vmx = ( regs[2] & 0x16 ) >> 4;
+		video_print_string(7, "VMX: ");
+		video_print_uint8(14, vmx);
+		video_print_string(7, "\n");
+
+		uint8_t smx = ( regs[2] & 0x32 ) >> 4;
+		video_print_string(7, "SMX: ");
+		video_print_uint8(14, smx);
+		video_print_string(7, "\n");
+		*/
+		/*@TODO implement all rest of functions... Intel Volume 2A*/
+
+		uint8_t vme = ( regs[3] >> 1 ) & 0x1;
+		uint8_t de = ( regs[3] >> 2 ) & 0x1;
+		uint8_t pse = ( regs[3] >> 3 ) & 0x1;
+		uint8_t tsc = ( regs[3] >> 4 ) & 0x1;
+		uint8_t msr = ( regs[3] >> 5 ) & 0x1;
+		uint8_t pae = ( regs[3] >> 6 ) & 0x1;
+		uint8_t mce = ( regs[3] >> 7 ) & 0x1;
+		uint8_t cx8 = ( regs[3] >> 8 ) & 0x1;
+		uint8_t apic = ( regs[3] >> 9 ) & 0x1;
+		uint8_t sep = ( regs[3] >> 11 ) & 0x1;
+		uint8_t mtrr = ( regs[3] >> 12 ) & 0x1;
+		uint8_t pge = ( regs[3] >> 13 ) & 0x1;
+		uint8_t mca = ( regs[3] >> 14 ) & 0x1;
+		uint8_t cmov = ( regs[3] >> 15 ) & 0x1;
+		uint8_t pat = ( regs[3] >> 16 ) & 0x1;
+		uint8_t pse36 = ( regs[3] >> 17 ) & 0x1;
+		uint8_t psn = ( regs[3] >> 18 ) & 0x1;
+		uint8_t clfsh = ( regs[3] >> 19 ) & 0x1;
+		uint8_t ds = ( regs[3] >> 21 ) & 0x1;
+		uint8_t acpi = ( regs[3] >> 22 ) & 0x1;
+		uint8_t mmx = ( regs[3] >> 23 ) & 0x1;
+		uint8_t fxsr = ( regs[3] >> 24 ) & 0x1;
+		uint8_t sse = ( regs[3] >> 25 ) & 0x1;
+		uint8_t sse2 = ( regs[3] >> 26 ) & 0x1;
+		uint8_t ss = ( regs[3] >> 27 ) & 0x1;
+		uint8_t htt = ( regs[3] >> 28 ) & 0x1;
+		uint8_t tm = ( regs[3] >> 29 ) & 0x1;
+		uint8_t pbe = ( regs[3] >> 31 ) & 0x1;
+		uint8_t fpu = regs[3] & 0x1;
+
+		video_print_string(7, "Flags: ");
+
+		if ( fpu == 0x1 )
+		{
+			video_print_string(7, "fpu, ");
+		}
+		if ( vme == 0x1 )
+		{
+			video_print_string(7, "vme, ");
+		}
+		if ( de == 0x1 )
+		{
+			video_print_string(7, "de, ");
+		}
+		if ( pse == 0x1 )
+		{
+			video_print_string(7, "pse, ");
+		}
+		if ( tsc == 0x1 )
+		{
+			video_print_string(7, "tsc, ");
+		}
+		if ( msr == 0x1 )
+		{
+			video_print_string(7, "msr, ");
+		}
+		if ( pae == 0x1 )
+		{
+			video_print_string(7, "pae, ");
+		}
+		if ( mce == 0x1 )
+		{
+			video_print_string(7, "mce, ");
+		}
+		if ( cx8 == 0x1 )
+		{
+			video_print_string(7, "cx8, ");
+		}
+		if ( apic == 0x1 )
+		{
+			video_print_string(7, "apic, ");
+		}
+		if ( sep == 0x1 )
+		{
+			video_print_string(7, "sep, ");
+		}
+		if ( mtrr == 0x1 )
+		{
+			video_print_string(7, "mtrr, ");
+		}
+		if ( pge == 0x1 )
+		{
+			video_print_string(7, "pge, ");
+		}
+		if ( mca == 0x1 )
+		{
+			video_print_string(7, "mca, ");
+		}
+		if ( cmov == 0x1 )
+		{
+			video_print_string(7, "cmov, ");
+		}
+		if ( pat == 0x1 )
+		{
+			video_print_string(7, "pat, ");
+		}
+		if ( pse36 == 0x1 )
+		{
+			video_print_string(7, "pse-36, ");
+		}
+		if ( psn == 0x1 )
+		{
+			video_print_string(7, "psn, ");
+		}
+		if ( clfsh == 0x1 )
+		{
+			video_print_string(7, "clfsh, ");
+		}
+		if ( ds == 0x1 )
+		{
+			video_print_string(7, "ds, ");
+		}
+		if ( acpi == 0x1 )
+		{
+			video_print_string(7, "acpi, ");
+		}
+		if ( mmx == 0x1 )
+		{
+			video_print_string(7, "mmx, ");
+		}
+		if ( fxsr == 0x1 )
+		{
+			video_print_string(7, "fxsr, ");
+		}
+		if ( sse == 0x1 )
+		{
+			video_print_string(7, "sse, ");
+		}
+		if ( sse2 == 0x1 )
+		{
+			video_print_string(7, "sse2, ");
+		}
+		if ( ss == 0x1 )
+		{
+			video_print_string(7, "ss, ");
+		}
+		if ( htt == 0x1 )
+		{
+			video_print_string(7, "htt, ");
+		}
+		if ( tm == 0x1 )
+		{
+			video_print_string(7, "tm, ");
+		}
+		if ( pbe == 0x1 )
+		{
+			video_print_string(7, "pbe, ");
+		}
+		video_print_string(7, "\n");
+	}
+
+	video_print_string(7, "eax: ");
+	video_print_uint32(14, regs[0]);
+	video_print_string(7,"\n");
+
+	video_print_string(7, "ebx: ");
+	video_print_uint32(14, regs[1]);
+	video_print_string(7,"\n");
+
+	video_print_string(7, "ecx: ");
+	video_print_uint32(14, regs[2]);
+	video_print_string(7,"\n");
+
+	video_print_string(7, "edx: ");
+	video_print_uint32(14, regs[3]);
+	video_print_string(7,"\n");
+
+
