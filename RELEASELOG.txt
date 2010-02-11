@@ -1,0 +1,2 @@
+
+* Strange bug in my code or gcc: unable to use values by reference... why?
