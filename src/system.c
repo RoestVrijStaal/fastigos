@@ -26,14 +26,14 @@ void default_idt_handler()
 	outb(PIC2_CMD, PIC_EOI);
 
 	__asm__ __volatile__("sti");
-	__asm__ __volatile__("popa; leave; iret"); /* BLACK MAGIC! */
+	__asm__ __volatile__("popa; leave; iret");
 }
 
 void gdt_init(void)
 {
 	debug_write_string("gdt_init()\n");
 
-	struct gdtInfo gdtdesc;
+	static struct gdtInfo gdtdesc;
 
 	gdtdesc.size = sizeof(gdt) -1;
 	gdtdesc.addr = (uint32_t) gdt;
@@ -57,27 +57,29 @@ void gdt_init(void)
 
 void install_idt_handler(uint8_t index, uint32_t handler)
 {
-	debug_write_string("install_idt_handler(");
-	debug_write_uint8(index);
-	debug_write_string(", ");
-	debug_write_uint32(handler);
-	debug_write_string(")\n");
-
-	__asm__ __volatile("cli");
+	debug_write_string("install_idt_handler() begin\n");
+/*	__asm__ __volatile("cli");*/
 
 	if ( handler == 0x0 )
 	{
+		debug_write_string("cleaning all idt...");
 		memset(idt + index, 0, sizeof(struct idt_descriptor));
+		debug_write_string("ok\n");
 	}
 	else
 	{
 		idt[index] = BUILD_IDT_DESCRIPTOR(handler);
 	}
 
-	__asm__ __volatile("sti");
+/*	__asm__ __volatile("sti");*/
+
+	debug_write_string("install_idt_handler(");
+	debug_write_uint8(index);
+	debug_write_string(", ");
+	debug_write_uint32(handler);
+	debug_write_string(")\n");
 
 	debug_write_string("install_idt_handler() return\n");
-
 }
 
 void idt_init(void)
