@@ -58,7 +58,6 @@ void gdt_init(void)
 void install_idt_handler(uint8_t index, uint32_t handler)
 {
 	debug_write_string("install_idt_handler() begin\n");
-/*	__asm__ __volatile("cli");*/
 
 	if ( handler == 0x0 )
 	{
@@ -71,7 +70,6 @@ void install_idt_handler(uint8_t index, uint32_t handler)
 		idt[index] = BUILD_IDT_DESCRIPTOR(handler);
 	}
 
-/*	__asm__ __volatile("sti");*/
 
 	debug_write_string("install_idt_handler(");
 	debug_write_uint8(index);
@@ -86,7 +84,7 @@ void idt_init(void)
 {
 	debug_write_string("idt_init()\n");
 
-	struct idtInfo idtdesc;
+	static struct idtInfo idtdesc;
 	uint8_t i;
 
 	memset(idt, 0, sizeof(idt));
@@ -94,26 +92,25 @@ void idt_init(void)
 	idtdesc.size = sizeof(idt) -1;
 	idtdesc.addr = (uint32_t) idt;
 
-	__asm__ __volatile("cli");
+	__asm__ __volatile__("cli");
 	outb(PIC1_CMD, PIC_ICW1);
 	outb(PIC2_CMD, PIC_ICW1);
 	__asm__ __volatile__("lidt %0;":"=m"(idtdesc));
 	outb(PIC1_DATA, PIC_ICW4);
 	outb(PIC2_DATA, PIC_ICW4);
-	__asm__ __volatile("sti");
 
 	/* 32 intel default interrupts */
 	for(i=0;i<=31;i++)
 	{
 		install_idt_handler(i, (uint32_t)default_idt_handler);
 	}
-	// + 16 IRQ's */
+	/* + 16 IRQ's */
 	for(i=31;i<=48;i++)
 	{
 		install_idt_handler(i, (uint32_t)default_idt_handler);
 	}
 
-	__asm__("sti");
+	__asm__ __volatile__("sti");
 	debug_write_string("idt_init() return\n");
 }
 
