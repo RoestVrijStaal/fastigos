@@ -72,3 +72,21 @@ void debug_write_uint8(uint8_t number)
 	}
 }
 
+void debug_write_dump(uint32_t offset, uint32_t size)
+{
+	uint8_t *data;
+	uint32_t position;
+	debug_write_string("dump of ");
+	debug_write_uint32(offset);
+	debug_write_string(" to ");
+	debug_write_uint32(size);
+	debug_write_string(":\n");
+	*data = offset;
+	for ( position=0; position<size;position++)
+	{
+		*data++;
+		debug_write_uint8(data);
+		debug_write_string(" ");
+	}
+	debug_write_string("\nend of dump\n");
+}
