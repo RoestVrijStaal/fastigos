@@ -3,7 +3,6 @@
 
 #include "typedefs.h"
 #include "io.h"
-
 __attribute__((noreturn)) void syswait(void);
 
 void *memset(void *s, uint8_t c, uint32_t size);
