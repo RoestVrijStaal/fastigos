@@ -10,12 +10,13 @@ void _start(uint32_t ramsizekb)
 
 	gdt_init();
 	idt_init();
-	debug_write_dump(0x0, 5);
-	syswait();
+	/*debug_write_dump(0x0, 5);*/
 
 	mem_init(ramsize);
 
 	video_init();
+
+	fdc_init();
 
 	syswait();
 }
