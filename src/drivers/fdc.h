@@ -1,6 +1,12 @@
 #ifndef __FDC_H__
 #define __FDC_H__
 
+#include "../devel/io.h"
+#include "../devel/debug.h"
+#include "../devel/system.h"
+
+#define FDC_INT 6
+
 enum FloppyRegisters
 {
    STATUS_REGISTER_A                = 0x3F0, /* read-only */
@@ -39,5 +45,9 @@ enum FloppyCommands
 };
 
 void fdc_init();
-
+void fdc_interrupt();
+void reset_fdc();
+void fdc_isr();
+void fdc_send(int byte);
+int fdc_get();
 #endif

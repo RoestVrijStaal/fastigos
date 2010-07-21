@@ -5,14 +5,13 @@ SECTIONS
 	.text 0x7e000 : {
 		*(.text)
 	}
-	.bss : {
-		*(.bss)
-	}
 	.rodata : {
 		*(.rodata)
 	}
 	.data : {
 		*(.data)
 	}
-
+	.bss : {
+		*(.bss)
+	}
 }

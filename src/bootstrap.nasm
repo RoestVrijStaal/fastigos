@@ -94,14 +94,14 @@ read_disc2:
 	mov	AX, 4					;
 	push	AX					; 3 retry's
 .tryread:
-	mov	AX,	BOOTSTRAP_KERNEL_REALMODE+8192	; after the first read
+	mov	AX,	BOOTSTRAP_KERNEL_REALMODE	; after the first read
 	mov	ES,	AX
-	mov	BX,	0
+	mov	BX,	8196
 	mov	AH,	2				; Load disk data to ES:BX
 	mov	AL,	16				; Load 16 sectors
-	mov	CH,	0				; Cylinder=1
-	mov	CL,	1				; Sector=1
-	mov	DH,	0				; Head=0
+	mov	CH,	0				; Cylinder=0
+	mov	CL,	16				; Sector=16
+	mov	DH,	0				; Head=1
 	mov	DL,	0				; Drive=0
 	int	13h
 	jc	.retry
