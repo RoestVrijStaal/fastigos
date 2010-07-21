@@ -9,5 +9,6 @@
 
 /* drivers */
 #include "video.h"
+#include "fdc.h"
 
 #endif

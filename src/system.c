@@ -104,6 +104,7 @@ void idt_init(void)
 	{
 		install_idt_handler(i, (uint32_t)default_idt_handler);
 	}
+
 	/* + 16 IRQ's */
 	for(i=31;i<=48;i++)
 	{
