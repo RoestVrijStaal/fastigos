@@ -16,6 +16,28 @@
 #define PIC2_DATA 0xa1
 #define PIC_EOI 0x20
 
+#define MAX_SYSTEM_DESCRIPTORS 256
+#define DESCRIPTOR_TYPE_FREE   -1
+#define DESCRIPTOR_TYPE_DRIVER  0
+
+struct io_descriptor_s
+{
+	int8_t		type;
+	uint32_t	* open_callback;
+	uint32_t	* close_callback;
+	uint32_t	* seek_callback;
+	uint32_t	* read_callback;
+	uint32_t	* write_callback;
+	uint32_t	* ioctl_callback;
+	uint32_t	pointer_offset;
+	uint32_t	userid;
+	char		* filename;
+};
+
+int8_t io_init();
+int8_t io_deinit();
+//sint8_t io_getdescriptor(uint32_t descriptor, io_descriptor_s *ptr_to_descriptor);
+
 uint8_t inb(uint16_t port);
 
 void outb(uint16_t port, uint8_t data);
