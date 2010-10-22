@@ -30,7 +30,10 @@ all:
 	$(GCC) $(CFLAGS_INTEL) -S drivers/fdc.c -o fdc.S
 	as fdc.S -o fdc.o
 
-	ld kernel.o io.o system.o memory.o debug.o video.o fdc.o --warn-common -T linker.ld -strip-all -o kernel.bin
+	$(GCC) $(CFLAGS_INTEL) -S drivers/null.c -o null.S
+	as null.S -o null.o
+
+	ld kernel.o io.o system.o memory.o debug.o video.o fdc.o null.o --warn-common -T linker.ld -strip-all -o kernel.bin
 
 	dd if=kernel.bin of=../fda.img bs=1 conv=notrunc seek=512
 clean:
