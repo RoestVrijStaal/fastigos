@@ -18,6 +18,12 @@ void _start(uint32_t ramsizekb)
 
 	fdc_init();
 
+	int8_t byte;
+	null_init();
+	null_write(&byte);
+	null_read(&byte);
+	null_deinit();
+
 	syswait();
 }
 

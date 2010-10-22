@@ -8,6 +8,7 @@
 #include "memory.h"
 
 /* drivers */
+#include "null.h"
 #include "video.h"
 #include "fdc.h"
 
