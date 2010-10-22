@@ -20,8 +20,9 @@ void _start(uint32_t ramsizekb)
 
 	int8_t byte;
 	null_init();
-	null_write(&byte);
 	null_read(&byte);
+	null_seek(0);
+	null_write(byte);
 	null_deinit();
 
 	syswait();

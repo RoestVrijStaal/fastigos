@@ -1,6 +1,7 @@
-CFLAGS_INTEL= -Wall -m32 -nostdlib -static -nostdinc -masm=intel --freestanding -fno-stack-protector         -I devel/ -I drivers/ -ansi
-CFLAGS_ATT  = -Wall -m32 -nostdlib -static -nostdinc             --freestanding -fno-stack-protector -Werror -I devel/ -I drivers/ -ansi
+CFLAGS_INTEL= -Wall -m32 -nostdlib -static -nostdinc -masm=intel --freestanding -fno-stack-protector         -I devel/ -I drivers/
+CFLAGS_ATT  = -Wall -m32 -nostdlib -static -nostdinc             --freestanding -fno-stack-protector -Werror -I devel/ -I drivers/
 GCC=gcc-4.1
+#-ansi
 
 all:
 	dd if=/dev/zero of=../fda.img bs=1k count=1440
