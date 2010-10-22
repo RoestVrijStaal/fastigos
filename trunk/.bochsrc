@@ -2,9 +2,9 @@
 plugin_ctrl: unmapped=1, biosdev=1, speaker=1, extfpuirq=1, iodebug=1, ioapic=1
 config_interface: textconfig
 display_library: sdl
-memory: host=32, guest=32
-romimage: file="/home/jrubio/share/bochs/BIOS-bochs-latest"
-vgaromimage: file="/home/jrubio/share/bochs/VGABIOS-lgpl-latest"
+memory: host=32, guest=4
+romimage: file="/home/sharek/share/bochs/BIOS-bochs-latest"
+vgaromimage: file="/home/sharek/share/bochs/VGABIOS-lgpl-latest"
 boot: floppy
 floppy_bootsig_check: disabled=0
 floppya: type=1_44, 1_44="fda.img", status=inserted

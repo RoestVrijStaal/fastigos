@@ -1,4 +1,5 @@
 #include "kernel.h"
+struct io_descriptor_s * system_descriptors;
 
 void _start(uint32_t ramsizekb)
 {
@@ -24,6 +25,8 @@ void _start(uint32_t ramsizekb)
 	null_seek(0);
 	null_write(byte);
 	null_deinit();
+
+	malloc(1024*1024);
 
 	syswait();
 }

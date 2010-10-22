@@ -50,4 +50,6 @@ void reset_fdc();
 void fdc_isr();
 void fdc_send(int byte);
 int fdc_get();
+void fdc_motorOn();
+void fdc_motorOff();
 #endif
