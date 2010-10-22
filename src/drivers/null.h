@@ -6,6 +6,7 @@
 
 int8_t null_init();
 int8_t null_deinit();
+int8_t null_seek(uint32_t position);
 int8_t null_read(int8_t * byte);
 int8_t null_write(int8_t byte);
 
