@@ -193,12 +193,13 @@ infinite:
 pmode:								;
 	mov	EBP, 0x1fffe
 	mov	ESP, 0x1fffe
+	;mov	ESP, 0x00400000 				; kernel do this better
 
 	xor	EAX, EAX
 	mov	AX, [SYSTEM_MEMORY]
-	push	EAX				; ramsize uint32_t
-	push	EAX				; EFLAGS
-	push	EAX				; EIP
+	push	EAX				; ramsize uint32_t (for the kernel can take it on C)
+	push	EAX				; fake EFLAGS
+	push	EAX				; fake EIP
 	jmp	SEGMENT_CODE:BOOTSTRAP_KERNEL_PMODE		; shut up the signature! and run the kernel (bye bye!)
 ; ############################################################################
 ; ### All strings
