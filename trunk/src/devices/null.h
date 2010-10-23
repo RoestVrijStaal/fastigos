@@ -4,6 +4,7 @@
 #include "device.h"
 
 __FOS_DEVICE_STATUS null_init(void);
+__FOS_DEVICE_STATUS null_deinit(void);
 __FOS_DEVICE_STATUS null_read(uint8_t * byte);
 __FOS_DEVICE_STATUS null_write(uint8_t byte);
 __FOS_DEVICE_STATUS null_seek(uint32_t offset);

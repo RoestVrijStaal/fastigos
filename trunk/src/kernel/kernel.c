@@ -23,9 +23,18 @@ __attribute__((noreturn)) void kernel_die(char *message)
 __attribute__((noreturn)) void kernel_main()
 {
 	// initialize drivers
+	null_init();
+	vga_init();
+	// normal kernel work loop
+	vga_seek(1997);
+	vga_write('h');
+	vga_write('e');
+	vga_write('l');
+	vga_write('l');
+	vga_write('o');
 
-	//void *space1 = kmalloc(2097152);
-	//kfree(space1);
-
+	// end of kernel (the death!)
+	vga_deinit();
+	null_deinit();
 	kernel_die("End of code");
 }
