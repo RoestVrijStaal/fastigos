@@ -25,15 +25,11 @@ __attribute__((noreturn)) void kernel_main()
 	// initialize drivers
 	null_init();
 	vga_init();
+	fdc_init();
 	// normal kernel work loop
-	vga_seek(1997);
-	vga_write('h');
-	vga_write('e');
-	vga_write('l');
-	vga_write('l');
-	vga_write('o');
 
 	// end of kernel (the death!)
+	fdc_deinit();
 	vga_deinit();
 	null_deinit();
 	kernel_die("End of code");
