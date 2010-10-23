@@ -1,11 +1,22 @@
-#ifndef __SYSTEM_H__
-#define __SYSTEM_H__
+#ifndef __MMU_H__
+#define __MMU_H__
 
-#include "typedefs.h"
-#include "io.h"
-__attribute__((noreturn)) void syswait(void);
+#include "../common/typedefs.h"
+#include "../debug/debug.h"
+#include "../kernel/kernel.h"
 
-void *memset(void *s, uint8_t c, uint32_t size);
+#define MEMORY_BLOCK_SIZE 4096
+#define MEMORY_FREE_BEGIN 0x400000
+#define MEMORY_FREE_SIZE  0x400000
+#define MEMORY_MAP_OFFSET 0x100000
+
+#define PIC1_CMD 0x20
+#define PIC_ICW1 0x11
+#define PIC2_CMD 0xa0
+#define PIC1_DATA 0x21
+#define PIC_ICW4 0x01
+#define PIC2_DATA 0xa1
+#define PIC_EOI 0x20
 
 struct segment_descriptor
 {
@@ -90,7 +101,7 @@ struct segment_descriptor
 		.avl 		= 0,				\
 		.l 		= 0,				\
 		.db 		= 1,				\
-		.g 		= 0				\
+		.g 		= 1				\
 	})
 
 #define BUILD_4K_DS_RW_SEG_DESC(base_addr, limit)		\
@@ -127,17 +138,11 @@ struct gdtInfo
 	uint32_t	addr;
 } __attribute__((__packed__));
 
-static struct segment_descriptor gdt[] =
+struct idtInfo
 {
-	NULL_DESCRIPTOR,
-	BUILD_4K_CS_RE_SEG_DESC(0,0xffffffff),
-	BUILD_4K_SS_RW_SEG_DESC(0,0xffffffff),
-	BUILD_4K_DS_RW_SEG_DESC(0,0xffffffff),
-};
-
-void default_idt_handler();
-
-void gdt_init(void);
+	uint16_t	size;
+	uint32_t	addr;
+} __attribute__((__packed__));
 
 struct idt_descriptor
 {
@@ -148,16 +153,9 @@ struct idt_descriptor
 	uint16_t	offset_16_31;
 } __attribute__((__packed__));
 
-
-static struct idt_descriptor idt[255];
-
-struct idtInfo
-{
-	uint16_t	size;
-	uint32_t	addr;
-} __attribute__((__packed__));
-
-void install_idt_handler(uint8_t index, uint32_t handler);
-void idt_init(void);
-
+__attribute__((noreturn)) void mmu_init(void);
+void * kmalloc(uint32_t size);
+void kfree(void * addr);
+void dump_memory_map();
 #endif
+

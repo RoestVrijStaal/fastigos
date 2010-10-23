@@ -2,9 +2,9 @@
 plugin_ctrl: unmapped=1, biosdev=1, speaker=1, extfpuirq=1, iodebug=1, ioapic=1
 config_interface: textconfig
 display_library: sdl
-memory: host=32, guest=4
+memory: host=32, guest=8
 romimage: file="/home/sharek/share/bochs/BIOS-bochs-latest"
-vgaromimage: file="/home/sharek/share/bochs/VGABIOS-lgpl-latest"
+vgaromimage: file="/home/sharek/share/bochs/VGABIOS-lgpl-latest-debug"
 boot: floppy
 floppy_bootsig_check: disabled=0
 floppya: type=1_44, 1_44="fda.img", status=inserted
@@ -28,7 +28,7 @@ cpu: count=1, ips=4000000, reset_on_triple_fault=1, ignore_bad_msrs=1
 cpuid: cpuid_limit_winnt=0, mmx=1, sse=sse2, xapic=1, sep=1, aes=0, xsave=0, movbe=0
 print_timestamps: enabled=0
 debugger_log: -
-magic_break: enabled=0
+magic_break: enabled=1
 port_e9_hack: enabled=1
 text_snapshot_check: enabled=0
 private_colormap: enabled=0
