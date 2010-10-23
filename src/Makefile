@@ -28,7 +28,10 @@ all:
 	$(GCC) $(CFLAGS_INTEL) -S devices/video/vga.c -o vga.S -I./devices -I./devices/video
 	as vga.S -o vga.o
 
-	ld kernel.o debug.o mmu.o null.o vga.o --warn-common -T linker.ld -strip-all -o fbcore.bin
+	$(GCC) $(CFLAGS_INTEL) -S devices/disk/fdc.c -o fdc.S -I./devices -I./devices/disk
+	as fdc.S -o fdc.o
+
+	ld kernel.o debug.o mmu.o null.o vga.o fdc.o --warn-common -T linker.ld -strip-all -o fbcore.bin
 
 	dd if=fbcore.bin of=../fda.img bs=1 conv=notrunc seek=512
 clean:
