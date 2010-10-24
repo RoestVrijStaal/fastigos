@@ -82,7 +82,7 @@ __FOS_DEVICE_STATUS vga_init(void)
 {
 	debug_print("vga_init()\n");
 	// set screen buffer
-	vga_buffer = 0xb8000;
+	vga_buffer = (uint16_t)0xb8000;
 	// set cursor shape	
 	vga_setcursor_shape(0x0, 0xf);
 

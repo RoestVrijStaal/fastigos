@@ -157,5 +157,7 @@ __attribute__((noreturn)) void mmu_init(void);
 void * kmalloc(uint32_t size);
 void kfree(void * addr);
 void dump_memory_map();
+void install_idt_handler(uint8_t index, uint32_t handler);
+
 #endif
 
