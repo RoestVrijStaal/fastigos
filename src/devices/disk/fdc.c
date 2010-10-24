@@ -1,15 +1,22 @@
 #include "fdc.h"
 // http://www.osdever.net/tutorials/view/detecting-floppy-drives
+// http://wiki.osdev.org/Floppy_Disk_Controller#The_Floppy_Subsystem_is_Ugly
+// http://www.disy.cse.unsw.edu.au/lxr/source/drivers/block/floppy.c?v=linux-2.6.32
+// http://koders.com/c/fid051291340B94EC7F5D1A38EF6843466C0B07627B.aspx?s=fdc#L7
+// http://bos.asmhackers.net/docs/floppy/snippet_5/FLOPPY.ASM
 
 #define FDC_ERROR_TIMEOUT 	-1
 #define FDC_OK		 	 0
 
+#define FDC_DEFAULT_IRQ		32+6	// default 32 int's + 6 irq's
 struct fdcStatus_s
 {
 	uint8_t type;
 	uint8_t interrupt;
 	uint8_t mdrive;
 	uint8_t sdrive;
+	uint8_t sr0;
+	uint8_t track;
 };
 struct fdcStatus_s fdcStatus;
 
@@ -118,6 +125,128 @@ void fdc_detect_controller(void)
 	}
 }
 
+void fdc_recived_irq()
+{
+	__asm__ __volatile__("pusha");
+	__asm__ __volatile__("cli");
+
+	fdcStatus.interrupt = 0x1;
+	debug_print("fdc -> recived IRQ\n");
+	__asm__ __volatile__("outb %0, %b1"::"d"((uint16_t)PIC1_CMD),"a"((uint8_t)PIC_EOI));
+	__asm__ __volatile__("outb %0, %b1"::"d"((uint16_t)PIC2_CMD),"a"((uint8_t)PIC_EOI));
+
+	__asm__ __volatile__("sti");
+	__asm__ __volatile__("popa; leave; iret");		// black magic
+}
+
+void fdc_motorOn(uint8_t what_drive)
+{
+	debug_print("fdc_motorOn(");
+	debug_print_uint8(what_drive);
+	debug_print(")\n");
+
+	uint8_t drive = 0x0;
+	if ( what_drive == 0x0 )
+	{
+		drive = 0x1c;
+	}
+	else if ( what_drive == 0x1 )
+	{
+		drive = 0x2d;
+	}
+	else
+	{
+		debug_print("fdc -> unrecognized drive ");
+		debug_print_uint8(what_drive);
+		debug_print("\n");
+		return;
+	}
+	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, drive);
+}
+
+void fdc_motorOff(uint8_t what_drive)
+{
+	debug_print("fdc_motorOff(");
+	debug_print_uint8(what_drive);
+	debug_print(")\n");
+
+	uint8_t drive = 0x0;
+	if ( what_drive == 0x0 )
+	{
+		drive = 0x0c;
+	}
+	else if ( what_drive == 0x1 )
+	{
+		drive = 0x0d;
+	}
+	else
+	{
+		debug_print("fdc -> unrecognized drive ");
+		debug_print_uint8(what_drive);
+		debug_print("\n");
+		return;
+	}
+	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, drive);
+}
+
+void fdc_reset()
+{
+	debug_print("reset_fdc() begin\n");
+	fdcStatus.interrupt = 0x0;
+	install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
+	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, 0x00); /*disable controller*/
+  	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, 0x0c); /*enable controller*/
+	debug_print("reset_fdc() waiting int...\n");
+	while(!fdcStatus.interrupt);
+	debug_print("reset_fdc() int completed\n");
+	debug_print("reset_fdc() return\n");
+}
+//@todo don't work
+static void fdc_recalibrate(uint8_t what_drive)
+{
+	uint8_t retries;
+	debug_print("fdc_recalibrate(");
+	debug_print_uint8(what_drive);
+	debug_print(")\n");
+
+	uint8_t drive = 0x0;
+	if ( what_drive == 0x0 )
+	{
+		drive = 0x0c;
+	}
+	else if ( what_drive == 0x1 )
+	{
+		drive = 0x0d;
+	}
+	else
+	{
+		debug_print("fdc -> unrecognized drive ");
+		debug_print_uint8(what_drive);
+		debug_print("\n");
+		return;
+	}
+
+	fdcStatus.interrupt = 0x0;
+	install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
+
+	for (retries = 0; retries < 13; retries++)
+	{
+		fdc_send(FDC_RECALIBRATE);
+		fdc_send(drive);
+		while(!fdcStatus.interrupt);
+		fdc_send(FDC_SENSE_INTERRUPT);
+		fdcStatus.sr0 = fdc_get();
+		fdcStatus.track = fdc_get();
+		if (!(fdcStatus.sr0 & 0x10)) break;
+	}
+	debug_print("fdc -> calibration result: drive ");
+	debug_print_uint8(drive);
+	debug_print("sr0: ");
+	debug_print_uint8(fdcStatus.sr0);
+	debug_print("track: ");
+	debug_print_uint8(fdcStatus.track);
+}
+
 
 void fdc_detect_floppy_drives(void)
 {
@@ -140,6 +269,9 @@ __FOS_DEVICE_STATUS fdc_init(void)
 	debug_print("fdc_init()\n");
 	fdc_detect_controller();
 	fdc_detect_floppy_drives();
+	fdc_reset();
+	fdc_motorOn(0);
+	fdc_recalibrate(0);
 	return __FOS_DEVICE_STATUS_OK;
 }
 
