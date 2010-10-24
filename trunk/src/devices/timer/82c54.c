@@ -28,7 +28,7 @@ void timer82c54_idt_handler()
 __FOS_DEVICE_STATUS timer82c54_init(void)
 {
 	debug_print("timer82c54_init()\n");
-	install_idt_handler(0, (uint32_t)timer82c54_idt_handler);
+	//install_idt_handler(0, (uint32_t)timer82c54_idt_handler);
 
 	// initialize counter 0
 	// initialize counter 1
