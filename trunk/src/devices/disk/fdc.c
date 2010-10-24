@@ -1,4 +1,5 @@
 #include "fdc.h"
+// http://www.osdever.net/tutorials/view/detecting-floppy-drives
 
 #define FDC_ERROR_TIMEOUT 	-1
 #define FDC_OK		 	 0
@@ -7,8 +8,12 @@ struct fdcStatus_s
 {
 	uint8_t type;
 	uint8_t interrupt;
+	uint8_t mdrive;
+	uint8_t sdrive;
 };
 struct fdcStatus_s fdcStatus;
+
+char *drive_types[6] = { "free", "360kb 5.25in", "1.2mb 5.25in", "720kb 3.5in", "1.44mb 3.5in", "2.88mb 3.5in" };
 
 enum FDCRegisters
 {
@@ -113,10 +118,28 @@ void fdc_detect_controller(void)
 	}
 }
 
+
+void fdc_detect_floppy_drives(void)
+{
+	uint8_t data;
+	// get data from cmos
+	fdc_outb(0x70, 0x10);
+	data = fdc_inb(0x71);
+	fdcStatus.mdrive = data >> 4;
+	fdcStatus.sdrive = data & 0xf;
+	debug_print("fdc -> master: ");
+	debug_print(drive_types[fdcStatus.mdrive]);
+	debug_print("\n");
+	debug_print("fdc -> slave: ");
+	debug_print(drive_types[fdcStatus.sdrive]);
+	debug_print("\n");
+}
+
 __FOS_DEVICE_STATUS fdc_init(void)
 {
 	debug_print("fdc_init()\n");
 	fdc_detect_controller();
+	fdc_detect_floppy_drives();
 	return __FOS_DEVICE_STATUS_OK;
 }
 
