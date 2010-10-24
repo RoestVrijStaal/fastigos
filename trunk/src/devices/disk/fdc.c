@@ -3,6 +3,13 @@
 #define FDC_ERROR_TIMEOUT 	-1
 #define FDC_OK		 	 0
 
+struct fdcStatus_s
+{
+	uint8_t type;
+	uint8_t interrupt;
+};
+struct fdcStatus_s fdcStatus;
+
 enum FDCRegisters
 {
    FDC_STATUS_REGISTER_A                = 0x3F0, /* read-only */
@@ -39,6 +46,9 @@ enum FloppyCommands
    FDC_SCAN_LOW_OR_EQUAL =          25,
    FDC_SCAN_HIGH_OR_EQUAL =         29
 };
+
+#define FDC_NEC_CONTROLLER 0x80
+#define FDC_ENHANCED_CONTROLLER 0x90
 
 void fdc_outb(uint16_t port, uint8_t data)
 {
@@ -84,16 +94,29 @@ int fdc_get()
    return -1;   /* read timeout */
 }
 
+void fdc_detect_controller(void)
+{
+	/* get type of fdc */
+	fdc_send(FDC_VERSION);
+	fdcStatus.type = fdc_get();
+	if ( FDC_ENHANCED_CONTROLLER == fdcStatus.type )
+	{
+		debug_print("fdc -> enhanced controller found\n");
+	}
+	else if ( FDC_NEC_CONTROLLER == fdcStatus.type )
+	{
+		debug_print("fdc -> 8272A/765A controller found\n");
+	}
+	else
+	{
+		debug_print("fdc -> unknown controller found!\n");
+	}
+}
 
 __FOS_DEVICE_STATUS fdc_init(void)
 {
 	debug_print("fdc_init()\n");
-
-	/* get type of fdc */
-	fdc_send(FDC_VERSION);
-	uint8_t type = fdc_get();
-	
-	debug_print_uint8(type);
+	fdc_detect_controller();
 	return __FOS_DEVICE_STATUS_OK;
 }
 
