@@ -27,6 +27,18 @@ void default_idt_handler()
 	__asm__ __volatile__("popa; leave; iret");		// black magic
 }
 
+void default_irq_handler()
+{
+	__asm__ __volatile__("pusha");
+	__asm__ __volatile__("cli");
+
+	debug_print("default_irq_handler()\n");
+	__asm__ __volatile__("outb %b1, %0"::"d"((uint16_t)PIC1_CMD),"a"((uint8_t)PIC_EOI));
+	__asm__ __volatile__("outb %b1, %0"::"d"((uint16_t)PIC2_CMD),"a"((uint8_t)PIC_EOI));
+
+	__asm__ __volatile__("sti");
+	__asm__ __volatile__("popa; leave; iret");		// black magic
+}
 
 void install_idt_handler(uint8_t index, uint32_t handler)
 {
@@ -74,16 +86,16 @@ void idt_init(void)
 	__asm__ __volatile__("outb %b1, %0"::"d"((uint16_t)PIC1_DATA),"a"((uint8_t)PIC_ICW4));
 	__asm__ __volatile__("outb %b1, %0"::"d"((uint16_t)PIC2_DATA),"a"((uint8_t)PIC_ICW4));
 
-	/* 32 intel default interrupts */
-	for(i=0;i<=31;i++)
+	/* 31 intel default interrupts */
+	for(i=0;i<31;i++)
 	{
 		install_idt_handler(i, (uint32_t)default_idt_handler);
 	}
 
-	/* + 16 IRQ's */
+	/* + 15 IRQ's */
 	for(i=31;i<=48;i++)
 	{
-		install_idt_handler(i, (uint32_t)default_idt_handler);
+		install_idt_handler(i, (uint32_t)default_irq_handler);
 	}
 
 	__asm__ __volatile__("sti");

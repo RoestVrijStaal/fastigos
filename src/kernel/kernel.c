@@ -24,6 +24,7 @@ __attribute__((noreturn)) void kernel_main()
 {
 	// initialize drivers
 	null_init();
+	pic8259_init();
 	timer82c54_init();
 	vga_init();
 	console_init();
@@ -35,6 +36,7 @@ __attribute__((noreturn)) void kernel_main()
 	console_deinit();
 	vga_deinit();
 	timer82c54_deinit();
+	pic8259_deinit();
 	null_deinit();
 	kernel_die("End of code");
 }
