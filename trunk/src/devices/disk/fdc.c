@@ -48,7 +48,6 @@ enum FloppyCommands
    FDC_READ_ID =                    10,	/* generates IRQ6 */
    FDC_READ_DELETED_DATA =          12,
    FDC_FORMAT_TRACK =               13,    
-   FDC_DUMPREG =  	            14,    
    FDC_SEEK =                       15,     /* seek both heads to cylinder X */
    FDC_VERSION =                    16,	/* used during initialization, once */
    FDC_SCAN_EQUAL =                 17,
@@ -57,7 +56,8 @@ enum FloppyCommands
    FDC_LOCK =                       20,     /* protect controller params from a reset */
    FDC_VERIFY =                     22,
    FDC_SCAN_LOW_OR_EQUAL =          25,
-   FDC_SCAN_HIGH_OR_EQUAL =         29
+   FDC_SCAN_HIGH_OR_EQUAL =         29,
+   FDC_READ_ID_MFM =                74,	/* generates IRQ6 */
 };
 
 #define FDC_NEC_CONTROLLER 0x80
@@ -235,7 +235,7 @@ static void fdc_recalibrate(uint8_t what_drive)
 	{
 		fdc_send(FDC_RECALIBRATE);
 		fdc_send(drive);
-		sleep(100);
+		sleep(10);
 		fdc_send(FDC_SENSE_INTERRUPT);
 		fdcStatus.sr0 = fdc_get();
 		fdcStatus.track = fdc_get();
@@ -260,125 +260,7 @@ static void fdc_recalibrate(uint8_t what_drive)
 		debug_print("\n");
 	}
 }
-static void fdc_dumpreg()
-{
-// W 0 0 0     0 1 1 1 0
-// R               PCN_0          = 8
-// R               PCN_1          = 8
-// R               PCN_2          = 8
-// R               PCN_3          = 8
-// R   SRT           HUT          = 4/4
-// R     HLT          ND          = 7/1
-// R              SC/EOT          = 8
-// R LOCK 0 D3 D2 D1 D0 GAP WGATE = 1/1/1/1/1/1/1/1
-// R 0 EIS EFIFO POLL FIFOTHR     = 1/1/1/1/4
-// R              PRETRK          = 8
-	fdc_send(FDC_DUMPREG);
-	sleep(1);
-	uint8_t pcn0 = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t pcn1 = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t pcn2 = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t pcn3 = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
 
-	uint8_t srt_hut = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t srt = srt_hut >> 4;
-	uint8_t hut = srt_hut & 0x0f;
-
-	uint8_t hlt_nd = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t hlt = hlt_nd & 0xfe >> 1;
-	uint8_t nd = hlt_nd & 0x01;
-
-	uint8_t sc_eot = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-
-	uint8_t lock_zero_d3_d2_d1_d0_gap_wgate = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t lock = lock_zero_d3_d2_d1_d0_gap_wgate >> 7;
-	uint8_t d3 = lock_zero_d3_d2_d1_d0_gap_wgate >> 5 & 0x1;
-	uint8_t d2 = lock_zero_d3_d2_d1_d0_gap_wgate >> 4 & 0x1;
-	uint8_t d1 = lock_zero_d3_d2_d1_d0_gap_wgate >> 3 & 0x1;
-	uint8_t d0 = lock_zero_d3_d2_d1_d0_gap_wgate >> 2 & 0x1;
-	uint8_t gap = lock_zero_d3_d2_d1_d0_gap_wgate >> 1 & 0x1;
-	uint8_t wgate = lock_zero_d3_d2_d1_d0_gap_wgate & 0x1;
-
-	uint8_t zero_eis_efifo_poll_fifothr = fdc_inb(FDC_DATA_FIFO);
-	sleep(1);
-	uint8_t eis = zero_eis_efifo_poll_fifothr >> 7 & 0x1;
-	uint8_t efifo = zero_eis_efifo_poll_fifothr >> 6 & 0x1;
-	uint8_t poll = zero_eis_efifo_poll_fifothr >> 5 & 0x1;
-	uint8_t fifothr = zero_eis_efifo_poll_fifothr >> 4 & 0x0f;
-
-	uint8_t pretrk = fdc_inb(FDC_DATA_FIFO);
-
-	debug_print("fdc_dumpreg()\n");
-	debug_print("pcn0: ");
-	debug_print_uint8(pcn0);
-	debug_print("\n");
-	debug_print("pcn1: ");
-	debug_print_uint8(pcn1);
-	debug_print("\n");
-	debug_print("pcn2: ");
-	debug_print_uint8(pcn2);
-	debug_print("\n");
-	debug_print("pcn3: ");
-	debug_print_uint8(pcn3);
-	debug_print("\n");
-	debug_print("srt: ");
-	debug_print_uint8(srt);
-	debug_print(" hut: ");
-	debug_print_uint8(hut);
-	debug_print("\n");
-
-	debug_print("hlt/nd: ");
-	debug_print_uint8(hlt_nd);
-	debug_print("\n");
-	debug_print("hlt: ");
-	debug_print_uint8(hlt);
-	debug_print(" nd: ");
-	debug_print_uint8(nd);
-	debug_print("\n");
-
-	debug_print("sc/eot: ");
-	debug_print_uint8(sc_eot);
-	debug_print("\n");
-
-	debug_print("lock: ");
-	debug_print_uint8(lock);
-	debug_print(" d3: ");
-	debug_print_uint8(d3);
-	debug_print(" d2: ");
-	debug_print_uint8(d2);
-	debug_print(" d1: ");
-	debug_print_uint8(d1);
-	debug_print(" d0: ");
-	debug_print_uint8(d0);
-	debug_print(" gap: ");
-	debug_print_uint8(gap);
-	debug_print(" wgate: ");
-	debug_print_uint8(wgate);
-	debug_print("\n");
-
-	debug_print("eis: ");
-	debug_print_uint8(eis);
-	debug_print(" efifo: ");
-	debug_print_uint8(efifo);
-	debug_print(" poll: ");
-	debug_print_uint8(poll);
-
-	debug_print("fifothr: ");
-	debug_print_uint8(fifothr);
-	debug_print("\n");
-
-	debug_print(" pretrk: ");
-	debug_print_uint8(pretrk);
-	debug_print("\n");
-}
 static void fdc_configure()
 {
 // W 0   0     0    1      0 0 1 1
@@ -409,6 +291,60 @@ void fdc_detect_floppy_drives(void)
 	debug_print("\n");
 }
 
+void fdc_read_id(uint8_t what_drive)
+{
+	debug_print("fdc_read_id(");
+	debug_print_uint8(what_drive);
+	debug_print(")\n");
+
+	uint8_t drive = 0x0;
+	if ( what_drive == 0x0 )
+	{
+		drive = 0x0c;
+	}
+	else if ( what_drive == 0x1 )
+	{
+		drive = 0x0d;
+	}
+	else
+	{
+		debug_print("fdc -> unrecognized drive ");
+		debug_print_uint8(what_drive);
+		debug_print("\n");
+		return;
+	}
+        install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
+	debug_print("fdc_read_id() waiting int...\n");
+	fdc_send(FDC_READ_ID_MFM);
+	fdcStatus.interrupt = 0x0;
+	fdc_send(drive);
+	while(!fdcStatus.interrupt);
+
+	uint8_t st0 = fdc_get();
+	uint8_t st1 = fdc_get();
+	uint8_t st2 = fdc_get();
+	uint8_t c = fdc_get();
+	uint8_t h = fdc_get();
+	uint8_t r = fdc_get();
+	uint8_t n = fdc_get();
+
+	debug_print(" st0: ");
+	debug_print_uint8(st0);
+	debug_print(" st1: ");
+	debug_print_uint8(st1);
+	debug_print(" st2: ");
+	debug_print_uint8(st2);
+	debug_print(" c: ");
+	debug_print_uint8(c);
+	debug_print(" h: ");
+	debug_print_uint8(h);
+	debug_print(" r: ");
+	debug_print_uint8(r);
+	debug_print(" n: ");
+	debug_print_uint8(n);
+	debug_print("\n");
+}
+
 __FOS_DEVICE_STATUS fdc_init(void)
 {
 	debug_print("fdc_init()\n");
@@ -416,10 +352,11 @@ __FOS_DEVICE_STATUS fdc_init(void)
 	fdc_detect_floppy_drives();
 	fdc_reset();
 	fdc_configure();
-	fdc_dumpreg();
 
 	fdc_motorOn(0);
+	fdc_read_id(0);
 	fdc_recalibrate(0);
+	fdc_read_id(0);
 	return __FOS_DEVICE_STATUS_OK;
 }
 
