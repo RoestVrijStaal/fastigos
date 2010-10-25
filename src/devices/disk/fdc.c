@@ -201,7 +201,7 @@ void fdc_reset()
 	debug_print("reset_fdc() int completed\n");
 	debug_print("reset_fdc() return\n");
 }
-//@todo don't work
+
 static void fdc_recalibrate(uint8_t what_drive)
 {
 	uint8_t retries;
@@ -259,7 +259,34 @@ static void fdc_recalibrate(uint8_t what_drive)
 		debug_print("\n");
 	}
 }
+static void fdc_dumpreg()
+{
+// W 0 0 0     0 1 1 1 0
+// R               PCN_0          = 8
+// R               PCN_1          = 8
+// R               PCN_2          = 8
+// R               PCN_3          = 8
+// R   SRT           HUT          = 4/4
+// R     HLT          ND          = 7/1
+// R              SC/EOT          = 8
+// R LOCK 0 D3 D2 D1 D0 GAP WGATE = 1/1/1/1/1/1/1/1
+// R 0 EIS EFIFO POLL FIFOTHR     = 1/1/1/1/4
+// R              PRETRK          = 8
+ 
+}
+static void fdc_configure()
+{
+// W 0   0     0    1      0 0 1 1
+// W 0   0     0    0      0 0 0 0
+// W 0 EIS EFIFO POLL __FIFOTHR___ // EIS=No implied seeks / EFIFO=FIFO disabled / POLL=Polling Enabled / FIFOTHR=FIFO Thresold set 1 byte
+// W ___________PRETRK____________ // PRETRK=Pre compensation set to track 0
+	debug_print("fdc_configure()\n");
 
+	fdc_send(FDC_CONFIGURE);
+	fdc_send(0x0);
+	fdc_send(0xf);
+	fdc_send(0x0);
+}
 
 void fdc_detect_floppy_drives(void)
 {
@@ -283,6 +310,8 @@ __FOS_DEVICE_STATUS fdc_init(void)
 	fdc_detect_controller();
 	fdc_detect_floppy_drives();
 	fdc_reset();
+	fdc_configure();
+
 	fdc_motorOn(0);
 	fdc_recalibrate(0);
 	return __FOS_DEVICE_STATUS_OK;
