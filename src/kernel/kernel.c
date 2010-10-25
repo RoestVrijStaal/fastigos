@@ -12,7 +12,7 @@ __attribute__((noreturn)) void kernel_die(char *message)
 	debug_print("Kernel_die(\"");
 	debug_print(message);
 	debug_print("\")\n");
-	//__asm__ __volatile__("cli");
+	__asm__ __volatile__("cli");
 	while(1)
 	{
 		__asm__("hlt");
@@ -32,11 +32,13 @@ __attribute__((noreturn)) void kernel_main()
 	// normal kernel work loop
 
 	// end of kernel (the death!)
+	/*
 	fdc_deinit();
 	console_deinit();
 	vga_deinit();
 	timer82c54_deinit();
 	pic8259_deinit();
 	null_deinit();
+	*/
 	kernel_die("End of code");
 }
