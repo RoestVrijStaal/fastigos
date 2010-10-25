@@ -226,25 +226,38 @@ static void fdc_recalibrate(uint8_t what_drive)
 		return;
 	}
 
+	uint8_t recalibration = 0;
 	fdcStatus.interrupt = 0x0;
-	install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
+        install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
 
-	for (retries = 0; retries < 13; retries++)
+	for (retries = 0; retries < 14; retries++)
 	{
 		fdc_send(FDC_RECALIBRATE);
 		fdc_send(drive);
-		while(!fdcStatus.interrupt);
+		sleep(100);
 		fdc_send(FDC_SENSE_INTERRUPT);
 		fdcStatus.sr0 = fdc_get();
 		fdcStatus.track = fdc_get();
-		if (!(fdcStatus.sr0 & 0x10)) break;
+		if (!(fdcStatus.sr0 & 0x10))
+		{
+			recalibration = 1;
+			break;
+		}
 	}
-	debug_print("fdc -> calibration result: drive ");
-	debug_print_uint8(drive);
-	debug_print("sr0: ");
-	debug_print_uint8(fdcStatus.sr0);
-	debug_print("track: ");
-	debug_print_uint8(fdcStatus.track);
+	if (recalibration == 0)
+	{
+		debug_print("fdc -> recalibration timeout\n");
+	}
+	else
+	{
+		debug_print("fdc -> calibration result: drive ");
+		debug_print_uint8(drive);
+		debug_print(" sr0: ");
+		debug_print_uint8(fdcStatus.sr0);
+		debug_print(" track: ");
+		debug_print_uint8(fdcStatus.track);
+		debug_print("\n");
+	}
 }
 
 

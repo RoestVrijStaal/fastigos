@@ -7,4 +7,5 @@
 __FOS_DEVICE_STATUS timer82c54_init(void);
 __FOS_DEVICE_STATUS timer82c54_deinit(void);
 
+void sleep(uint32_t seconds);
 #endif

@@ -44,34 +44,10 @@ void pic8259_remap(uint16_t pic1, uint16_t pic2)
 
 }
 
-uint16_t ticks;
-
-void pic8259_clock_handler()
-{
-	__asm__ __volatile__("pusha");
-	__asm__ __volatile__("cli");
-
-	ticks++;
-	//@todo only a sample
-	if ( ticks == 0 )
-	{
-		debug_print("tick()\n");
-	}
-	__asm__ __volatile__("outb %0, %b1"::"d"((uint16_t)PIC1_CMD),"a"((uint8_t)PIC_EOI));
-	__asm__ __volatile__("outb %0, %b1"::"d"((uint16_t)PIC2_CMD),"a"((uint8_t)PIC_EOI));
-
-	__asm__ __volatile__("sti");
-	__asm__ __volatile__("popa; leave; iret");		// black magic
-}
-
 __FOS_DEVICE_STATUS pic8259_init(void)
 {
 	debug_print("pic8259_init()\n");
 	pic8259_remap(0x20, 0x28);
-	ticks = 0;
-	__asm__ __volatile__("cli");
-	install_idt_handler(32, (uint32_t)pic8259_clock_handler);
-	__asm__ __volatile__("sti");
 	return __FOS_DEVICE_STATUS_OK;
 }
 
