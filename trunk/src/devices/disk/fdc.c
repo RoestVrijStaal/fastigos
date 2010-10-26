@@ -5,18 +5,43 @@
 // http://koders.com/c/fid051291340B94EC7F5D1A38EF6843466C0B07627B.aspx?s=fdc#L7
 // http://bos.asmhackers.net/docs/floppy/snippet_5/FLOPPY.ASM
 
-#define FDC_ERROR_TIMEOUT 	-1
+/*
+ * general return codes by fdc_ functions
+ */
+#define FDC_ERROR	 	-1
 #define FDC_OK		 	 0
 
+/*
+ * the IRQ of fdc controller
+ */
 #define FDC_DEFAULT_IRQ		32+6	// default 32 int's + 6 irq's
+
+/*
+ * controllers can be handled by this controller
+ */
+#define FDC_8272A_CONTROLLER 0x80
+#define FDC_ENHANCED_CONTROLLER 0x90
+
+/*
+ * drive struct descriptor
+ */
+typedef struct fdcDrive_s
+{
+	uint8_t type;
+	int8_t motor;
+	uint8_t track;
+} fdcDrive;
+
+/*
+ * controller struct descriptor
+ */
 struct fdcStatus_s
 {
 	uint8_t type;
 	uint8_t interrupt;
-	uint8_t mdrive;
-	uint8_t sdrive;
-	uint8_t sr0;
-	uint8_t track;
+	fdcDrive mdrive;
+	fdcDrive sdrive;
+	uint8_t st0;
 };
 struct fdcStatus_s fdcStatus;
 
@@ -28,7 +53,7 @@ enum FDCRegisters
    FDC_STATUS_REGISTER_B                = 0x3F1, /* read-only */
    FDC_DIGITAL_OUTPUT_REGISTER          = 0x3F2,
    FDC_TAPE_DRIVE_REGISTER              = 0x3F3,
-   FDC_MAIN_STATUS_REGISTER             = 0x3F4, /* read-only */
+   FDC_MAIN_STATUS_REGISTER             = 0x3F4, /* read-only RQM,DIO,NON-DMA,CMD-BUSY,DRV3-BUSY,DRV2-BUSY,DRV1-BUSY,DRV0-BUSY */
    FDC_DATARATE_SELECT_REGISTER         = 0x3F4, /* write-only */
    FDC_DATA_FIFO                        = 0x3F5,
    FDC_DIGITAL_INPUT_REGISTER           = 0x3F7, /* read-only */
@@ -60,14 +85,17 @@ enum FloppyCommands
    FDC_READ_ID_MFM =                74,	/* generates IRQ6 */
 };
 
-#define FDC_NEC_CONTROLLER 0x80
-#define FDC_ENHANCED_CONTROLLER 0x90
-
+/*
+ * tool function required by fdc_send
+ */
 void fdc_outb(uint16_t port, uint8_t data)
 {
 	__asm__ __volatile__("out %0, %b1"::"d"(port),"a"(data));
 }
 
+/*
+ * tool function required by fdc_get
+ */
 uint8_t fdc_inb(uint16_t port)
 {
 	unsigned char ret;
@@ -75,7 +103,9 @@ uint8_t fdc_inb(uint16_t port)
 	return ret;
 }
 
-/* sendbyte() routine from intel manual */
+/*
+ * sendbyte() routine from intel manual
+ */
 void fdc_send(int byte)
 {
    volatile int msr;
@@ -91,8 +121,10 @@ void fdc_send(int byte)
    }
 }
 
-/* getbyte() routine from intel manual */
-int fdc_get()
+/*
+ * getbyte() routine from intel manual
+ */
+uint8_t fdc_get()
 {
    volatile int msr;
    int tmo;
@@ -104,29 +136,13 @@ int fdc_get()
       }
       fdc_inb(0x80);   /* delay */
    }
-   return -1;   /* read timeout */
+   return FDC_ERROR;   /* read timeout */
 }
 
-void fdc_detect_controller(void)
-{
-	/* get type of fdc */
-	fdc_send(FDC_VERSION);
-	fdcStatus.type = fdc_get();
-	if ( FDC_ENHANCED_CONTROLLER == fdcStatus.type )
-	{
-		debug_print("fdc -> enhanced controller found\n");
-	}
-	else if ( FDC_NEC_CONTROLLER == fdcStatus.type )
-	{
-		debug_print("fdc -> 8272A/765A controller found\n");
-	}
-	else
-	{
-		debug_print("fdc -> unknown controller found!\n");
-	}
-}
-
-void fdc_recived_irq()
+/*
+ * basic irq handler for controller
+ */
+void fdc_irq_handler()
 {
 	__asm__ __volatile__("pusha");
 	__asm__ __volatile__("cli");
@@ -140,37 +156,11 @@ void fdc_recived_irq()
 	__asm__ __volatile__("popa; leave; iret");		// black magic
 }
 
-void fdc_motorOn(uint8_t what_drive)
+/*
+ * tool function convert drive numeric to controller id value
+ */
+int8_t fdc_tool_get_drive(uint8_t what_drive)
 {
-	debug_print("fdc_motorOn(");
-	debug_print_uint8(what_drive);
-	debug_print(")\n");
-
-	uint8_t drive = 0x0;
-	if ( what_drive == 0x0 )
-	{
-		drive = 0x1c;
-	}
-	else if ( what_drive == 0x1 )
-	{
-		drive = 0x2d;
-	}
-	else
-	{
-		debug_print("fdc -> unrecognized drive ");
-		debug_print_uint8(what_drive);
-		debug_print("\n");
-		return;
-	}
-	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, drive);
-}
-
-void fdc_motorOff(uint8_t what_drive)
-{
-	debug_print("fdc_motorOff(");
-	debug_print_uint8(what_drive);
-	debug_print(")\n");
-
 	uint8_t drive = 0x0;
 	if ( what_drive == 0x0 )
 	{
@@ -185,185 +175,265 @@ void fdc_motorOff(uint8_t what_drive)
 		debug_print("fdc -> unrecognized drive ");
 		debug_print_uint8(what_drive);
 		debug_print("\n");
-		return;
+		return FDC_ERROR;
 	}
-	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, drive);
+	return drive;
 }
 
-void fdc_reset()
+/*
+ * detect controller and return if this driver is capable to use it
+ */
+int8_t fdc_detect_controller(void)
 {
-	debug_print("reset_fdc() begin\n");
-	fdcStatus.interrupt = 0x0;
-	install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
-	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, 0x00); /*disable controller*/
-  	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, 0x0c); /*enable controller*/
-	debug_print("reset_fdc() waiting int...\n");
-	while(!fdcStatus.interrupt);
-	debug_print("reset_fdc() int completed\n");
-	debug_print("reset_fdc() return\n");
-}
-
-static void fdc_recalibrate(uint8_t what_drive)
-{
-	uint8_t retries;
-	debug_print("fdc_recalibrate(");
-	debug_print_uint8(what_drive);
-	debug_print(")\n");
-
-	uint8_t drive = 0x0;
-	if ( what_drive == 0x0 )
+	/* get type of fdc */
+	fdc_send(FDC_VERSION);
+	fdcStatus.type = fdc_get();
+	if ( FDC_ENHANCED_CONTROLLER == fdcStatus.type )
 	{
-		drive = 0x0c;
+		debug_print("fdc -> enhanced controller found\n");
 	}
-	else if ( what_drive == 0x1 )
+	else if ( FDC_8272A_CONTROLLER == fdcStatus.type )
 	{
-		drive = 0x0d;
+		debug_print("fdc -> 8272A/765A controller found\n");
 	}
 	else
 	{
-		debug_print("fdc -> unrecognized drive ");
-		debug_print_uint8(what_drive);
-		debug_print("\n");
-		return;
+		debug_print("fdc -> unknown controller found!\n");
+		return FDC_ERROR;
 	}
-
-	uint8_t recalibration = 0;
-	fdcStatus.interrupt = 0x0;
-        install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
-
-	for (retries = 0; retries < 14; retries++)
-	{
-		fdc_send(FDC_RECALIBRATE);
-		fdc_send(drive);
-		sleep(10);
-		fdc_send(FDC_SENSE_INTERRUPT);
-		fdcStatus.sr0 = fdc_get();
-		fdcStatus.track = fdc_get();
-		if (!(fdcStatus.sr0 & 0x10))
-		{
-			recalibration = 1;
-			break;
-		}
-	}
-	if (recalibration == 0)
-	{
-		debug_print("fdc -> recalibration timeout\n");
-	}
-	else
-	{
-		debug_print("fdc -> calibration result: drive ");
-		debug_print_uint8(drive);
-		debug_print(" sr0: ");
-		debug_print_uint8(fdcStatus.sr0);
-		debug_print(" track: ");
-		debug_print_uint8(fdcStatus.track);
-		debug_print("\n");
-	}
+	return FDC_OK;
 }
 
-static void fdc_configure()
-{
-// W 0   0     0    1      0 0 1 1
-// W 0   0     0    0      0 0 0 0
-// W 0 EIS EFIFO POLL __FIFOTHR___ // EIS=No implied seeks / EFIFO=FIFO disabled / POLL=Polling Enabled / FIFOTHR=FIFO Thresold set 1 byte
-// W ___________PRETRK____________ // PRETRK=Pre compensation set to track 0
-	debug_print("fdc_configure()\n");
-
-	fdc_send(FDC_CONFIGURE);
-	fdc_send(0x0);
-	fdc_send(0xf);
-	fdc_send(0x0);
-}
-
-void fdc_detect_floppy_drives(void)
+/*
+ * detect drives attached to this controller
+ */
+int8_t fdc_detect_floppy_drives(void)
 {
 	uint8_t data;
 	// get data from cmos
 	fdc_outb(0x70, 0x10);
 	data = fdc_inb(0x71);
-	fdcStatus.mdrive = data >> 4;
-	fdcStatus.sdrive = data & 0xf;
+	fdcStatus.mdrive.type = data >> 4;
+	fdcStatus.sdrive.type = data & 0xf;
 	debug_print("fdc -> master: ");
-	debug_print(drive_types[fdcStatus.mdrive]);
+
+	debug_print(drive_types[fdcStatus.mdrive.type]);
 	debug_print("\n");
 	debug_print("fdc -> slave: ");
-	debug_print(drive_types[fdcStatus.sdrive]);
+	debug_print(drive_types[fdcStatus.sdrive.type]);
 	debug_print("\n");
+	if ( (fdcStatus.mdrive.type == 0x0) && (fdcStatus.sdrive.type == 00 ))
+	{
+		return FDC_ERROR;
+	}
+	return FDC_OK;
 }
 
-void fdc_read_id(uint8_t what_drive)
+/*
+ * start motor of selected drive
+ */
+int8_t fdc_motorOn(uint8_t what_drive)
 {
-	debug_print("fdc_read_id(");
+	debug_print("fdc_motorOn(");
 	debug_print_uint8(what_drive);
 	debug_print(")\n");
-
-	uint8_t drive = 0x0;
-	if ( what_drive == 0x0 )
+	uint8_t drive;
+	if ( what_drive == 0 )
 	{
-		drive = 0x0c;
+		drive = 0x1c + 	fdcStatus.sdrive.motor;
+		// mark motor as ON
+		fdcStatus.mdrive.motor = 0x10;
 	}
-	else if ( what_drive == 0x1 )
+	else if ( what_drive == 1 )
 	{
-		drive = 0x0d;
+		drive = 0x2d + 	fdcStatus.mdrive.motor;
+		// mark motor as ON
+		fdcStatus.sdrive.motor = 0x20;
 	}
 	else
 	{
-		debug_print("fdc -> unrecognized drive ");
-		debug_print_uint8(what_drive);
-		debug_print("\n");
-		return;
+		return FDC_ERROR;
 	}
-        install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_recived_irq);
-	debug_print("fdc_read_id() waiting int...\n");
-	fdc_send(FDC_READ_ID_MFM);
-	fdcStatus.interrupt = 0x0;
-	fdc_send(drive);
-	while(!fdcStatus.interrupt);
-
-	uint8_t st0 = fdc_get();
-	uint8_t st1 = fdc_get();
-	uint8_t st2 = fdc_get();
-	uint8_t c = fdc_get();
-	uint8_t h = fdc_get();
-	uint8_t r = fdc_get();
-	uint8_t n = fdc_get();
-
-	debug_print(" st0: ");
-	debug_print_uint8(st0);
-	debug_print(" st1: ");
-	debug_print_uint8(st1);
-	debug_print(" st2: ");
-	debug_print_uint8(st2);
-	debug_print(" c: ");
-	debug_print_uint8(c);
-	debug_print(" h: ");
-	debug_print_uint8(h);
-	debug_print(" r: ");
-	debug_print_uint8(r);
-	debug_print(" n: ");
-	debug_print_uint8(n);
-	debug_print("\n");
+	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, drive);
+	sleep(100);
+	return FDC_OK;
 }
 
+/*
+ * stop motor of selected drive
+ */
+int8_t fdc_motorOff(uint8_t what_drive)
+{
+	debug_print("fdc_motorOff(");
+	debug_print_uint8(what_drive);
+	debug_print(")\n");
+	// the id drive codes of DOR differs from rest of controller
+	uint8_t drive;
+	if ( what_drive == 0 )
+	{
+		drive = 0x0c + fdcStatus.sdrive.motor;
+		// mark motor as OFF
+		fdcStatus.mdrive.motor = 0x00;
+	}
+	else if ( what_drive == 1 )
+	{
+		drive = 0x0d + 	fdcStatus.mdrive.motor;
+		// mark motor as OFF
+		fdcStatus.sdrive.motor = 0x00;
+	}
+	else
+	{
+		return FDC_ERROR;
+	}
+	fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, drive);
+	sleep(100);
+	return FDC_OK;
+}
+
+/*
+ * software reset controller
+ */
+int8_t fdc_reset()
+{
+        debug_print("reset_fdc() begin\n");
+        fdcStatus.interrupt = 0x0;
+        install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_irq_handler);
+        fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, 0x00); /*disable controller*/
+        fdc_outb(FDC_DIGITAL_OUTPUT_REGISTER, 0x0c); /*enable controller*/
+        debug_print("reset_fdc() waiting int...\n");
+	int32_t c = 100;
+	// timeout of 100
+        while(c > 0)
+	{
+		c--;
+		if ( 0x1 == fdcStatus.interrupt)
+		{
+			c=0;
+		}
+		sleep(1);
+	}
+	if ( 0x1 != fdcStatus.interrupt)
+	{
+	        debug_print("reset_fdc() TIMEOUT\n");
+		return FDC_ERROR;
+	}
+        debug_print("reset_fdc() int completed\n");
+        debug_print("reset_fdc() return\n");
+	return FDC_OK;
+}
+
+/*
+ * recalibrate selected drive
+ */
+int8_t fdc_recalibrate(uint8_t what_drive)
+{
+        uint8_t retries;
+        debug_print("fdc_recalibrate(");
+        debug_print_uint8(what_drive);
+        debug_print(")\n");
+	// get drive id
+        int8_t drive = fdc_tool_get_drive(what_drive);
+	if ( FDC_ERROR == drive )
+	{
+		return FDC_ERROR;
+	}
+
+        uint8_t recalibration = 0;
+	// install irq handler
+        fdcStatus.interrupt = 0x0;
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+	//@todo this not work, review datasheet page 42 for compilant recalibrate
+        install_idt_handler(FDC_DEFAULT_IRQ, (uint32_t)fdc_irq_handler);
+	uint8_t track;
+        for (retries = 0; retries < 14; retries++)
+        {
+		// tell controller recalibrate command
+                fdc_send(FDC_RECALIBRATE);
+                fdc_send(drive);
+		// wait arbitrary time
+                sleep(10);
+		// get controller status
+                fdc_send(FDC_SENSE_INTERRUPT);
+                fdcStatus.st0 = fdc_get();
+		track = fdc_get();
+                debug_print("fdc -> st0: ");
+                debug_print_uint8(track);
+                debug_print("\n");
+
+                if (!(fdcStatus.st0 & 0x10))
+                {
+                        recalibration = 1;
+                        break;
+                }
+        }
+        if (recalibration == 0)
+        {
+                debug_print("fdc -> recalibration timeout\n");
+		return FDC_ERROR;
+        }
+        debug_print("fdc -> calibration result: drive ");
+        debug_print_uint8(drive);
+        debug_print(" sr0: ");
+        debug_print_uint8(fdcStatus.st0);
+        debug_print(" track: ");
+        debug_print_uint8(track);
+	if ( 0 == what_drive )
+	{
+        	fdcStatus.mdrive.track = track;
+	}
+	else
+	{
+        	fdcStatus.sdrive.track = track;
+	}
+
+        debug_print("\n");
+	return FDC_OK;
+}
+
+/*
+ *  initializes the controller
+ */
 __FOS_DEVICE_STATUS fdc_init(void)
 {
+	int8_t rc;
 	debug_print("fdc_init()\n");
-	fdc_detect_controller();
-	fdc_detect_floppy_drives();
+	// detect controller
+	rc = fdc_detect_controller();
+	if ( FDC_OK != rc )
+	{
+		debug_print("fdc_init() -> this drive cannot handle this controller\n");
+		return __FOS_DEVICE_STATUS_ERROR;
+	}
+	// detect drives
+	rc = fdc_detect_floppy_drives();
+	if ( FDC_OK != rc )
+	{
+		debug_print("fdc_init() -> this controller don't have drives\n");
+		return __FOS_DEVICE_STATUS_ERROR;
+	}
+	// reset controller
 	fdc_reset();
-	fdc_configure();
+	// asume motors are off
+	fdcStatus.mdrive.motor = 0x0;
+	fdcStatus.sdrive.motor = 0x0;
+	fdc_motorOn(1);
+	fdc_recalibrate(1);
 
-	fdc_motorOn(0);
-	fdc_read_id(0);
-	fdc_recalibrate(0);
-	fdc_read_id(0);
 	return __FOS_DEVICE_STATUS_OK;
 }
-
-__FOS_DEVICE_STATUS fdc_deinit(void)
-{
-	debug_print("fdc_deinit()\n");
-	return __FOS_DEVICE_STATUS_OK;
-}
-
 
