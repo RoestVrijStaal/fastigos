@@ -8,6 +8,7 @@
 // devices
 #include "../devices/device.h"
 #include "../devices/null.h"
+#include "../devices/cpu/cpu.h"
 #include "../devices/pic/pic8259.h"
 #include "../devices/timer/82c54.h"
 #include "../devices/video/vga.h"
