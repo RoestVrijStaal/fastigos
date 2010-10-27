@@ -3,6 +3,8 @@
 //@todo ramsizekb is currently ignored
 __attribute__((noreturn)) void _start(uint32_t ramsizekb)
 {
+	// special "device" must be initialized first
+	cpu_init();
 	// never return at this point, the mmu modify the stack and call kernel_main
 	mmu_init();
 }
